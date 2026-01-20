@@ -1,0 +1,40 @@
+export enum PaymentMethod {
+  CREDIT = 'Crédito',
+  DEBIT = 'Débito',
+  CASH = 'Dinheiro',
+  PIX = 'Pix'
+}
+
+export interface Product {
+  id: string;
+  name: string;
+  price: number;
+  category: string;
+  imageUrl: string;
+}
+
+export interface CartItem extends Product {
+  quantity: number;
+}
+
+export interface Transaction {
+  id: string;
+  orderNumber: string;
+  timestamp: number;
+  items: CartItem[];
+  subtotal: number;
+  discount: number;
+  total: number;
+  paymentMethod: PaymentMethod;
+  amountPaid?: number; // Valor entregue pelo cliente
+  change?: number;     // Troco calculado
+  status: 'completed' | 'cancelled';
+  kitchenStatus: 'pending' | 'done'; // Sincronizado via banco de dados
+}
+
+export interface DailySummary {
+  totalSales: number;
+  totalRevenue: number;
+  averageTicket: number;
+  methodBreakdown: Record<string, number>;
+}

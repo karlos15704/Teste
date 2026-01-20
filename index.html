@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>TÔ FRITO! - Sistema de Vendas</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;900&display=swap" rel="stylesheet">
+    <style>
+      body {
+        font-family: 'Inter', sans-serif;
+        background-color: #fff7ed; /* Orange-50 background tint */
+      }
+      /* Custom scrollbar for better aesthetics */
+      ::-webkit-scrollbar {
+        width: 8px;
+        height: 8px;
+      }
+      ::-webkit-scrollbar-track {
+        background: #f1f1f1; 
+      }
+      ::-webkit-scrollbar-thumb {
+        background: #fdba74; /* Orange-300 */
+        border-radius: 4px;
+      }
+      ::-webkit-scrollbar-thumb:hover {
+        background: #f97316; /* Orange-500 */
+      }
+      
+      /* Fire Animation Keyframes */
+      @keyframes burn-text {
+        0% {
+          text-shadow: 4px -4px 1px #fbbf24, 0 -5px 10px #f97316, 0 -10px 20px #dc2626;
+        }
+        50% {
+          text-shadow: 4px -2px 1px #fbbf24, 0 -8px 15px #ea580c, 0 -15px 25px #b91c1c;
+        }
+        100% {
+          text-shadow: 4px -6px 1px #fbbf24, 0 -5px 10px #f97316, 0 -10px 20px #dc2626;
+        }
+      }
+
+      /* Fire Text Effect Class - MORE INTENSE */
+      .text-fire {
+        background: linear-gradient(to top, #dc2626 20%, #f97316 60%, #facc15 90%);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        animation: burn-text 0.5s infinite alternate ease-in-out;
+      }
+
+      /* Mascot Animation: Running/Panic/Fire */
+      @keyframes mascot-run {
+        0%, 100% { transform: translateY(0) rotate(0deg); }
+        25% { transform: translateY(-5px) rotate(-5deg); }
+        50% { transform: translateY(0) rotate(0deg); }
+        75% { transform: translateY(-5px) rotate(5deg); }
+      }
+      
+      @keyframes fire-pulse {
+        0%, 100% { filter: drop-shadow(0 0 5px rgba(249, 115, 22, 0.6)); }
+        50% { filter: drop-shadow(0 0 20px rgba(239, 68, 68, 0.9)); }
+      }
+
+      /* New Subtle Animation for Empty Cart (Chill Mode) */
+      @keyframes mascot-chill {
+        0%, 100% { transform: translateY(0) rotate(-2deg) scale(1); }
+        50% { transform: translateY(-8px) rotate(2deg) scale(1.02); }
+      }
+
+      /* CTA Bounce Animation */
+      @keyframes cta-bounce {
+        0%, 100% { transform: scale(1); box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06); }
+        50% { transform: scale(1.03); box-shadow: 0 15px 20px -5px rgba(249, 115, 22, 0.4); }
+      }
+
+      .animate-mascot {
+        animation: mascot-run 0.3s infinite linear, fire-pulse 1s infinite ease-in-out;
+      }
+      
+      /* Slower animation for header */
+      .animate-mascot-slow {
+        animation: mascot-run 1s infinite ease-in-out;
+      }
+
+      /* Gentle animation for empty cart */
+      .animate-mascot-chill {
+        animation: mascot-chill 4s ease-in-out infinite;
+      }
+
+      /* Button CTA Animation */
+      .animate-cta-bounce {
+        animation: cta-bounce 2s infinite ease-in-out;
+      }
+      .animate-cta-bounce:active {
+        animation: none; /* Stop animation on click to feel responsiveness */
+      }
+    </style>
+  <script type="importmap">
+{
+  "imports": {
+    "react": "https://esm.sh/react@^19.2.3",
+    "react-dom/": "https://esm.sh/react-dom@^19.2.3/",
+    "react/": "https://esm.sh/react@^19.2.3/",
+    "lucide-react": "https://esm.sh/lucide-react@^0.562.0",
+    "recharts": "https://esm.sh/recharts@^3.6.0",
+    "@supabase/supabase-js": "https://esm.sh/@supabase/supabase-js@^2.91.0"
+  }
+}
+</script>
+</head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/index.tsx"></script>
+  </body>
+</html>
