@@ -1,16 +1,24 @@
 import React, { useState, useEffect } from 'react';
-import { MOCK_PRODUCTS, APP_NAME, MASCOT_URL } from './constants';
-import { Product, CartItem, Transaction, PaymentMethod } from './types';
+import { MOCK_PRODUCTS, APP_NAME, MASCOT_URL, STAFF_USERS as DEFAULT_STAFF } from './constants';
+import { Product, CartItem, Transaction, PaymentMethod, User } from './types';
 import { generateId, formatCurrency } from './utils';
 import ProductGrid from './components/ProductGrid';
 import CartSidebar from './components/CartSidebar';
 import Reports from './components/Reports';
 import KitchenDisplay from './components/KitchenDisplay';
+import LoginScreen from './components/LoginScreen';
+import UserManagement from './components/UserManagement';
 import { supabase, fetchTransactions, createTransaction, updateTransactionStatus, updateKitchenStatus, subscribeToTransactions } from './services/supabase';
-import { LayoutGrid, BarChart3, Flame, CheckCircle2, ChefHat, WifiOff } from 'lucide-react';
+import { LayoutGrid, BarChart3, Flame, CheckCircle2, ChefHat, WifiOff, LogOut, UserCircle2, Users as UsersIcon } from 'lucide-react';
 
 const App: React.FC = () => {
-  const [currentView, setCurrentView] = useState<'pos' | 'reports' | 'kitchen'>('pos');
+  // Login & Users State
+  const [currentUser, setCurrentUser] = useState<User | null>(null);
+  const [users, setUsers] = useState<User[]>([]);
+
+  // View State
+  const [currentView, setCurrentView] = useState<'pos' | 'reports' | 'kitchen' | 'users'>('pos');
+  
   const [cart, setCart] = useState<CartItem[]>([]);
   
   // Data State - Now managed via Supabase
@@ -23,12 +31,21 @@ const App: React.FC = () => {
   // State for Order Success Modal
   const [lastCompletedOrder, setLastCompletedOrder] = useState<{number: string, change?: number} | null>(null);
 
-  // Load Initial Data from Supabase
+  // Load Initial Data (Users + Transactions)
   const loadData = async () => {
+    // 1. Load Users from LocalStorage or Default
+    const savedUsers = localStorage.getItem('app_users');
+    if (savedUsers) {
+      setUsers(JSON.parse(savedUsers));
+    } else {
+      setUsers(DEFAULT_STAFF);
+      localStorage.setItem('app_users', JSON.stringify(DEFAULT_STAFF));
+    }
+
+    // 2. Load Transactions
     if (!supabase) {
       setIsConnected(false);
       setIsLoading(false);
-      // Fallback to localstorage if no DB configured yet
       const saved = localStorage.getItem('pos_transactions');
       if (saved) setTransactions(JSON.parse(saved));
       return;
@@ -38,7 +55,6 @@ const App: React.FC = () => {
       const data = await fetchTransactions();
       setTransactions(data);
       
-      // Calculate next order number based on today's data
       const startOfDay = new Date();
       startOfDay.setHours(0, 0, 0, 0);
       const todaysOrders = data.filter(t => t.timestamp >= startOfDay.getTime());
@@ -57,9 +73,7 @@ const App: React.FC = () => {
   useEffect(() => {
     loadData();
 
-    // Subscribe to Realtime Changes
     const subscription = subscribeToTransactions(() => {
-      // Reload data when any change happens in the DB (new order, kitchen update, etc)
       loadData();
     });
 
@@ -67,6 +81,30 @@ const App: React.FC = () => {
       if (subscription) subscription.unsubscribe();
     };
   }, []);
+
+  // --- USER MANAGEMENT ACTIONS ---
+  const handleAddUser = (newUser: User) => {
+    const updatedUsers = [...users, newUser];
+    setUsers(updatedUsers);
+    localStorage.setItem('app_users', JSON.stringify(updatedUsers));
+  };
+
+  const handleUpdateUser = (updatedUser: User) => {
+    const updatedUsers = users.map(u => u.id === updatedUser.id ? updatedUser : u);
+    setUsers(updatedUsers);
+    localStorage.setItem('app_users', JSON.stringify(updatedUsers));
+    
+    // Se o usuário editado for o atual, atualiza a sessão
+    if (currentUser?.id === updatedUser.id) {
+      setCurrentUser(updatedUser);
+    }
+  };
+
+  const handleDeleteUser = (userId: string) => {
+    const updatedUsers = users.filter(u => u.id !== userId);
+    setUsers(updatedUsers);
+    localStorage.setItem('app_users', JSON.stringify(updatedUsers));
+  };
 
   // --- CART ACTIONS ---
 
@@ -114,30 +152,27 @@ const App: React.FC = () => {
       discount,
       total,
       paymentMethod: method,
-      change,
       amountPaid,
+      change,
+      sellerName: currentUser?.name || 'Desconhecido',
       status: 'completed',
-      kitchenStatus: 'pending' // Default status for kitchen
+      kitchenStatus: 'pending'
     };
 
-    // Optimistic Update (update UI immediately)
     setTransactions(prev => [...prev, newTransaction]);
     setLastCompletedOrder({ number: orderNumber, change });
     clearCart();
     setNextOrderNumber(prev => prev + 1);
 
-    // Send to DB
     if (isConnected) {
       await createTransaction(newTransaction);
     } else {
-      // Fallback for demo/offline
       const current = JSON.parse(localStorage.getItem('pos_transactions') || '[]');
       localStorage.setItem('pos_transactions', JSON.stringify([...current, newTransaction]));
     }
   };
 
   const handleCancelTransaction = async (transactionId: string) => {
-    // Optimistic update
     setTransactions(prev => prev.map(t => 
       t.id === transactionId ? { ...t, status: 'cancelled' as const } : t
     ));
@@ -148,7 +183,6 @@ const App: React.FC = () => {
   };
 
   const handleUpdateKitchenStatus = async (transactionId: string, status: 'pending' | 'done') => {
-    // Optimistic update
     setTransactions(prev => prev.map(t => 
       t.id === transactionId ? { ...t, kitchenStatus: status } : t
     ));
@@ -159,9 +193,6 @@ const App: React.FC = () => {
   };
 
   const handleResetSystem = async () => {
-    // Note: In a real DB scenario, we might strictly delete rows or just archive them.
-    // For this prototype, we just clear local state.
-    // To implement DB wipe, we'd need a delete function in services/supabase.ts
     setTransactions([]);
     setNextOrderNumber(1);
     localStorage.removeItem('pos_transactions');
@@ -177,13 +208,18 @@ const App: React.FC = () => {
     );
   }
 
+  // Se não estiver logado, mostra a tela de login (usando a lista dinâmica de usuários)
+  if (!currentUser) {
+    return <LoginScreen availableUsers={users} onLogin={setCurrentUser} />;
+  }
+
   return (
     <div className="h-screen w-screen flex overflow-hidden bg-orange-50 relative">
       
       {!isConnected && (
          <div className="absolute top-0 left-0 w-full bg-red-600 text-white text-xs py-1 px-4 text-center z-50 flex justify-center items-center gap-2">
             <WifiOff size={14} />
-            <span>MODO OFFLINE - Configure o arquivo <b>services/supabase.ts</b> para sincronizar em tempo real.</span>
+            <span>MODO OFFLINE - Verifique sua conexão.</span>
          </div>
       )}
 
@@ -206,7 +242,6 @@ const App: React.FC = () => {
               </span>
             </div>
 
-            {/* Change Display for Cash Payments */}
             {lastCompletedOrder.change !== undefined && lastCompletedOrder.change > 0 && (
               <div className="mb-6 bg-green-50 border border-green-200 p-4 rounded-xl">
                  <span className="text-xs text-green-700 font-bold uppercase block">Troco a Devolver</span>
@@ -225,59 +260,89 @@ const App: React.FC = () => {
       )}
 
       {/* Sidebar Navigation */}
-      <nav className="w-16 bg-gray-900 flex flex-col items-center py-4 gap-6 z-30 shadow-xl border-r border-gray-800 pt-6">
+      <nav className="w-20 bg-gray-900 flex flex-col items-center py-4 gap-6 z-30 shadow-xl border-r border-gray-800 pt-6">
         <div className="text-orange-500 p-2 bg-gray-800 rounded-full mb-2 border border-orange-600 shadow-lg shadow-orange-900/50 hover:rotate-12 transition-transform duration-500 hover:scale-110">
-          <Flame size={20} fill="currentColor" className="text-orange-500 animate-pulse" />
+          <Flame size={24} fill="currentColor" className="text-orange-500 animate-pulse" />
         </div>
         
         <button 
           onClick={() => setCurrentView('pos')}
-          className={`p-2.5 rounded-xl transition-all duration-300 group relative ${currentView === 'pos' ? 'bg-orange-600 text-white shadow-lg shadow-orange-900/50 scale-105' : 'text-gray-400 hover:text-white hover:bg-gray-800 hover:scale-110'}`}
+          className={`p-3 rounded-2xl transition-all duration-300 group relative ${currentView === 'pos' ? 'bg-orange-600 text-white shadow-lg shadow-orange-900/50 scale-105' : 'text-gray-400 hover:text-white hover:bg-gray-800 hover:scale-110'}`}
           title="Caixa / Pedidos"
         >
-          <LayoutGrid size={20} className={`transition-transform duration-300 ${currentView === 'pos' ? '' : 'group-hover:rotate-3'}`} />
-          {/* Active Dot */}
+          <LayoutGrid size={24} className={`transition-transform duration-300 ${currentView === 'pos' ? '' : 'group-hover:rotate-3'}`} />
           {currentView === 'pos' && (
-            <span className="absolute -right-1 -top-1 w-2.5 h-2.5 bg-white border-2 border-gray-900 rounded-full animate-bounce" />
+            <span className="absolute -right-1 -top-1 w-3 h-3 bg-white border-2 border-gray-900 rounded-full animate-bounce" />
           )}
         </button>
 
         <button 
           onClick={() => setCurrentView('kitchen')}
-          className={`p-2.5 rounded-xl transition-all duration-300 group relative ${currentView === 'kitchen' ? 'bg-orange-600 text-white shadow-lg shadow-orange-900/50 scale-105' : 'text-gray-400 hover:text-white hover:bg-gray-800 hover:scale-110'}`}
+          className={`p-3 rounded-2xl transition-all duration-300 group relative ${currentView === 'kitchen' ? 'bg-orange-600 text-white shadow-lg shadow-orange-900/50 scale-105' : 'text-gray-400 hover:text-white hover:bg-gray-800 hover:scale-110'}`}
           title="Cozinha / Expedição"
         >
-          <ChefHat size={20} className={`transition-transform duration-300 ${currentView === 'kitchen' ? '' : 'group-hover:rotate-6'}`} />
+          <ChefHat size={24} className={`transition-transform duration-300 ${currentView === 'kitchen' ? '' : 'group-hover:rotate-6'}`} />
           {currentView === 'kitchen' && (
-            <span className="absolute -right-1 -top-1 w-2.5 h-2.5 bg-white border-2 border-gray-900 rounded-full animate-bounce" />
+            <span className="absolute -right-1 -top-1 w-3 h-3 bg-white border-2 border-gray-900 rounded-full animate-bounce" />
             
           )}
         </button>
 
         <button 
           onClick={() => setCurrentView('reports')}
-          className={`p-2.5 rounded-xl transition-all duration-300 group relative ${currentView === 'reports' ? 'bg-orange-600 text-white shadow-lg shadow-orange-900/50 scale-105' : 'text-gray-400 hover:text-white hover:bg-gray-800 hover:scale-110'}`}
+          className={`p-3 rounded-2xl transition-all duration-300 group relative ${currentView === 'reports' ? 'bg-orange-600 text-white shadow-lg shadow-orange-900/50 scale-105' : 'text-gray-400 hover:text-white hover:bg-gray-800 hover:scale-110'}`}
           title="Relatórios de Vendas"
         >
-          <BarChart3 size={20} className={`transition-transform duration-300 ${currentView === 'reports' ? '' : 'group-hover:-rotate-3'}`} />
+          <BarChart3 size={24} className={`transition-transform duration-300 ${currentView === 'reports' ? '' : 'group-hover:-rotate-3'}`} />
           {currentView === 'reports' && (
-            <span className="absolute -right-1 -top-1 w-2.5 h-2.5 bg-white border-2 border-gray-900 rounded-full animate-bounce" />
+            <span className="absolute -right-1 -top-1 w-3 h-3 bg-white border-2 border-gray-900 rounded-full animate-bounce" />
           )}
+        </button>
+
+        {/* ADMIN ONLY: Users Management */}
+        {currentUser.role === 'admin' && (
+          <button 
+            onClick={() => setCurrentView('users')}
+            className={`p-3 rounded-2xl transition-all duration-300 group relative ${currentView === 'users' ? 'bg-orange-600 text-white shadow-lg shadow-orange-900/50 scale-105' : 'text-gray-400 hover:text-white hover:bg-gray-800 hover:scale-110'}`}
+            title="Gerenciar Equipe"
+          >
+            <UsersIcon size={24} className={`transition-transform duration-300 ${currentView === 'users' ? '' : 'group-hover:rotate-6'}`} />
+            {currentView === 'users' && (
+              <span className="absolute -right-1 -top-1 w-3 h-3 bg-white border-2 border-gray-900 rounded-full animate-bounce" />
+            )}
+          </button>
+        )}
+
+        <div className="flex-1"></div>
+
+        <button 
+          onClick={() => {
+            if (window.confirm("Deseja fechar o caixa e sair?")) {
+              setCurrentUser(null);
+              setCart([]);
+              setCurrentView('pos');
+            }
+          }}
+          className="p-3 rounded-2xl text-red-400 hover:bg-red-500 hover:text-white transition-all duration-300 mb-4"
+          title="Sair / Logout"
+        >
+          <LogOut size={24} />
         </button>
       </nav>
 
       {/* Main Content Area */}
-      <main className="flex-1 flex overflow-hidden pt-6">
+      <main className="flex-1 flex overflow-hidden pt-6 relative">
+        {/* User Info Badge */}
+        <div className="absolute top-4 right-6 z-40 bg-white/90 backdrop-blur border border-orange-200 px-4 py-1.5 rounded-full shadow-sm flex items-center gap-2">
+           <UserCircle2 size={16} className="text-orange-600"/>
+           <span className="text-xs font-bold text-gray-700 uppercase">{currentUser.name}</span>
+        </div>
+
         {currentView === 'pos' && (
           <>
-            {/* Left: Product Grid */}
             <div className="flex-1 flex flex-col min-w-0">
-              {/* Header Centered */}
               <header className="px-6 py-4 bg-white border-b border-orange-100 shadow-sm z-10 relative flex items-center justify-center min-h-[90px]">
-                
-                {/* Logo and Name Centered */}
                 <div className="flex items-center gap-5 transition-transform hover:scale-105 duration-300">
-                   {/* Optimized Image Loading: eager loading and fetchPriority */}
                    <img 
                       src={MASCOT_URL} 
                       className="w-20 h-20 object-contain mix-blend-multiply animate-mascot-slow" 
@@ -289,14 +354,12 @@ const App: React.FC = () => {
                      {APP_NAME}
                    </h1>
                 </div>
-
               </header>
               <div className="flex-1 overflow-hidden relative">
                 <ProductGrid products={MOCK_PRODUCTS} onAddToCart={addToCart} />
               </div>
             </div>
 
-            {/* Right: Cart Sidebar */}
             <div className="w-96 min-w-[350px] h-full shadow-2xl z-20">
               <CartSidebar 
                 cart={cart}
@@ -325,6 +388,19 @@ const App: React.FC = () => {
               transactions={transactions} 
               onCancelTransaction={handleCancelTransaction}
               onResetSystem={handleResetSystem}
+            />
+          </div>
+        )}
+
+        {/* View de Gerenciamento de Usuários */}
+        {currentView === 'users' && currentUser.role === 'admin' && (
+          <div className="w-full h-full bg-orange-50/50">
+            <UserManagement 
+              users={users}
+              onAddUser={handleAddUser}
+              onUpdateUser={handleUpdateUser}
+              onDeleteUser={handleDeleteUser}
+              currentUser={currentUser}
             />
           </div>
         )}

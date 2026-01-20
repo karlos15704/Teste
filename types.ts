@@ -17,6 +17,13 @@ export interface CartItem extends Product {
   quantity: number;
 }
 
+export interface User {
+  id: string;
+  name: string;
+  password: string; // Em um app real, isso seria criptografado
+  role: 'admin' | 'staff';
+}
+
 export interface Transaction {
   id: string;
   orderNumber: string;
@@ -28,6 +35,7 @@ export interface Transaction {
   paymentMethod: PaymentMethod;
   amountPaid?: number; // Valor entregue pelo cliente
   change?: number;     // Troco calculado
+  sellerName?: string; // Nome do funcionário que vendeu
   status: 'completed' | 'cancelled';
   kitchenStatus: 'pending' | 'done'; // Sincronizado via banco de dados
 }

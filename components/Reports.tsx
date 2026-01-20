@@ -2,7 +2,7 @@ import React, { useMemo, useState } from 'react';
 import { Transaction, PaymentMethod } from '../types';
 import { formatCurrency } from '../utils';
 import { PieChart, Pie, Cell, Legend, Tooltip, ResponsiveContainer } from 'recharts';
-import { TrendingUp, DollarSign, ShoppingBag, CreditCard, Lock, Trash2, AlertTriangle, Printer, FileText, XCircle, Ban } from 'lucide-react';
+import { TrendingUp, DollarSign, ShoppingBag, CreditCard, Lock, Trash2, AlertTriangle, Printer, FileText, XCircle, Ban, Users } from 'lucide-react';
 import { APP_NAME } from '../constants';
 
 interface ReportsProps {
@@ -54,10 +54,20 @@ const Reports: React.FC<ReportsProps> = ({ transactions, onCancelTransaction, on
     const totalDiscount = activeTransactions.reduce((acc, t) => acc + (t.discount || 0), 0);
     const averageTicket = activeTransactions.length > 0 ? totalSales / activeTransactions.length : 0;
     
+    // By Payment Method
     const byMethod = activeTransactions.reduce((acc, t) => {
       acc[t.paymentMethod] = (acc[t.paymentMethod] || 0) + t.total;
       return acc;
     }, {} as Record<string, number>);
+
+    // By Seller (Vendedor)
+    const bySeller = activeTransactions.reduce((acc, t) => {
+      const seller = t.sellerName || 'N/A';
+      if (!acc[seller]) acc[seller] = { count: 0, total: 0 };
+      acc[seller].count += 1;
+      acc[seller].total += t.total;
+      return acc;
+    }, {} as Record<string, { count: number; total: number }>);
 
     // Aggregate Products
     const productSales: Record<string, { quantity: number; total: number }> = {};
@@ -76,12 +86,13 @@ const Reports: React.FC<ReportsProps> = ({ transactions, onCancelTransaction, on
       value: byMethod[method]
     }));
 
-    return { totalSales, totalDiscount, averageTicket, chartData, byMethod, productSales };
+    return { totalSales, totalDiscount, averageTicket, chartData, byMethod, bySeller, productSales };
   }, [activeTransactions]);
 
   const handleUnlock = (e: React.FormEvent) => {
     e.preventDefault();
-    if (passwordAttempt === '15704') {
+    // SENHA ATUALIZADA PARA O PADRÃO MASTER
+    if (passwordAttempt === '32034392320') {
       setIsLocked(false);
       setPasswordError(false);
     } else {
@@ -140,6 +151,16 @@ const Reports: React.FC<ReportsProps> = ({ transactions, onCancelTransaction, on
         </tr>
       `).join('');
 
+    const sellerRows = Object.entries(stats.bySeller)
+      .sort(([, a], [, b]) => b.total - a.total)
+      .map(([name, data]) => `
+        <tr>
+          <td style="padding: 4px 0; border-bottom: 1px solid #eee;">${name}</td>
+          <td style="padding: 4px 0; border-bottom: 1px solid #eee; text-align: center;">${data.count}</td>
+          <td style="padding: 4px 0; border-bottom: 1px solid #eee; text-align: right;">${formatCurrency(data.total)}</td>
+        </tr>
+      `).join('');
+
     const paymentRows = Object.entries(stats.byMethod)
       .map(([method, value]) => `
         <tr>
@@ -148,10 +169,8 @@ const Reports: React.FC<ReportsProps> = ({ transactions, onCancelTransaction, on
         </tr>
       `).join('');
       
-    // Generate Cancelled Rows with Detailed Items
     const cancelledRows = cancelledTransactions.length > 0 
       ? cancelledTransactions.map(t => {
-          // Create a string list of items (e.g. "1x Burguer, 2x Refri")
           const itemsList = t.items.map(i => `${i.quantity}x ${i.name}`).join(', ');
           
           return `
@@ -163,18 +182,6 @@ const Reports: React.FC<ReportsProps> = ({ transactions, onCancelTransaction, on
           </tr>
         `}).join('')
       : '<tr><td colspan="4" style="padding: 10px 0; text-align: center; color: #9ca3af;">Nenhum cancelamento.</td></tr>';
-
-    // Generate Active Sales Log (Extrato de Vendas)
-    const salesRows = activeTransactions
-      .sort((a, b) => a.timestamp - b.timestamp) // Sort by time ascending
-      .map(t => `
-        <tr>
-          <td style="padding: 4px 0; border-bottom: 1px solid #eee;">#${t.orderNumber}</td>
-          <td style="padding: 4px 0; border-bottom: 1px solid #eee;">${new Date(t.timestamp).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</td>
-          <td style="padding: 4px 0; border-bottom: 1px solid #eee; font-size: 11px;">${t.paymentMethod}</td>
-          <td style="padding: 4px 0; border-bottom: 1px solid #eee; text-align: right;">${formatCurrency(t.total)}</td>
-        </tr>
-      `).join('');
 
     const htmlContent = `
       <html>
@@ -189,7 +196,6 @@ const Reports: React.FC<ReportsProps> = ({ transactions, onCancelTransaction, on
             .total { font-size: 16px; font-weight: bold; text-align: right; margin-top: 10px; border-top: 2px dashed #000; padding-top: 10px; }
             .center { text-align: center; }
             .footer { margin-top: 30px; text-align: center; font-size: 10px; border-top: 1px solid #ccc; padding-top: 10px; }
-            .cancelled-section { margin-top: 20px; border: 1px solid #ccc; padding: 5px; }
           </style>
         </head>
         <body>
@@ -202,27 +208,25 @@ const Reports: React.FC<ReportsProps> = ({ transactions, onCancelTransaction, on
           <p>Vendas Ativas: <strong>${activeTransactions.length}</strong></p>
           <p>Cancelamentos: <strong>${cancelledTransactions.length}</strong></p>
           <p>Ticket Médio: <strong>${formatCurrency(stats.averageTicket)}</strong></p>
-          <p>Total Descontos: <strong>${formatCurrency(stats.totalDiscount)}</strong></p>
           <div class="total">FATURAMENTO LIQ: ${formatCurrency(stats.totalSales)}</div>
+
+          <h2>Vendas por Vendedor</h2>
+          <table>
+            <thead>
+              <tr style="border-bottom: 1px solid #000;">
+                <th align="left">Nome</th>
+                <th align="center">Qtd</th>
+                <th align="right">Total</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${sellerRows}
+            </tbody>
+          </table>
 
           <h2>Pagamentos</h2>
           <table>
             ${paymentRows}
-          </table>
-
-          <h2>Extrato de Vendas (Detalhado)</h2>
-          <table>
-            <thead>
-              <tr style="border-bottom: 1px solid #000;">
-                <th align="left" width="20%">Ficha</th>
-                <th align="left" width="25%">Hora</th>
-                <th align="left" width="25%">Pagto</th>
-                <th align="right" width="30%">Valor</th>
-              </tr>
-            </thead>
-            <tbody>
-              ${salesRows.length > 0 ? salesRows : '<tr><td colspan="4" style="text-align: center; padding: 10px;">Nenhuma venda.</td></tr>'}
-            </tbody>
           </table>
 
           <h2>Vendas Canceladas</h2>
@@ -255,10 +259,6 @@ const Reports: React.FC<ReportsProps> = ({ transactions, onCancelTransaction, on
           </table>
 
           <div class="footer">
-            <p>Conferido por:</p>
-            <br/><br/>
-            <p>__________________________________</p>
-            <p>Gerente / Responsável</p>
             <p>Impresso em ${new Date().toLocaleTimeString()}</p>
           </div>
           <script>
@@ -495,12 +495,12 @@ const Reports: React.FC<ReportsProps> = ({ transactions, onCancelTransaction, on
       </div>
 
       {/* Charts Section */}
-      <div className="grid grid-cols-1 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         {/* Payment Methods Chart */}
         <div className="bg-white p-6 rounded-xl shadow-sm border border-orange-100">
           <h3 className="font-semibold text-gray-800 mb-4 flex items-center gap-2">
             <CreditCard size={18} className="text-orange-500" />
-            Métodos de Pagamento (Ativos)
+            Métodos de Pagamento
           </h3>
           <div className="h-64">
              {stats.chartData.length > 0 ? (
@@ -530,6 +530,36 @@ const Reports: React.FC<ReportsProps> = ({ transactions, onCancelTransaction, on
              )}
           </div>
         </div>
+
+        {/* Sellers Chart/List */}
+        <div className="bg-white p-6 rounded-xl shadow-sm border border-orange-100 overflow-hidden">
+          <h3 className="font-semibold text-gray-800 mb-4 flex items-center gap-2">
+            <Users size={18} className="text-orange-500" />
+            Ranking Vendedores
+          </h3>
+          <div className="overflow-y-auto max-h-64 space-y-3">
+             {Object.entries(stats.bySeller).length > 0 ? (
+                Object.entries(stats.bySeller)
+                  .sort(([, a], [, b]) => b.total - a.total)
+                  .map(([name, data], idx) => (
+                  <div key={name} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg border border-gray-100">
+                     <div className="flex items-center gap-3">
+                        <span className={`w-6 h-6 flex items-center justify-center rounded-full text-xs font-bold ${idx === 0 ? 'bg-yellow-100 text-yellow-700' : 'bg-gray-200 text-gray-600'}`}>
+                          {idx + 1}
+                        </span>
+                        <div>
+                          <p className="font-bold text-gray-800 text-sm">{name}</p>
+                          <p className="text-xs text-gray-500">{data.count} vendas</p>
+                        </div>
+                     </div>
+                     <span className="font-bold text-gray-800">{formatCurrency(data.total)}</span>
+                  </div>
+                ))
+             ) : (
+                <div className="text-center py-8 text-gray-400 text-sm">Nenhuma venda registrada.</div>
+             )}
+          </div>
+        </div>
       </div>
 
       {/* Recent Transactions Table */}
@@ -542,6 +572,7 @@ const Reports: React.FC<ReportsProps> = ({ transactions, onCancelTransaction, on
             <thead className="bg-orange-50 text-gray-600">
               <tr>
                 <th className="px-6 py-3 font-medium">Pedido</th>
+                <th className="px-6 py-3 font-medium">Vendedor</th>
                 <th className="px-6 py-3 font-medium">Horário</th>
                 <th className="px-6 py-3 font-medium">Itens</th>
                 <th className="px-6 py-3 font-medium">Pagamento</th>
@@ -552,7 +583,7 @@ const Reports: React.FC<ReportsProps> = ({ transactions, onCancelTransaction, on
             <tbody className="divide-y divide-gray-100">
               {todayTransactions.length === 0 ? (
                  <tr>
-                   <td colSpan={6} className="px-6 py-8 text-center text-gray-400">
+                   <td colSpan={7} className="px-6 py-8 text-center text-gray-400">
                      Nenhum pedido registrado hoje.
                    </td>
                  </tr>
@@ -563,6 +594,9 @@ const Reports: React.FC<ReportsProps> = ({ transactions, onCancelTransaction, on
                     <tr key={t.id} className={`${isCancelled ? 'bg-red-50 hover:bg-red-100' : 'hover:bg-orange-50/50'} transition-colors`}>
                       <td className={`px-6 py-4 font-bold ${isCancelled ? 'text-red-500 line-through' : 'text-orange-600'}`}>
                         #{t.orderNumber}
+                      </td>
+                      <td className={`px-6 py-4 font-medium ${isCancelled ? 'text-red-400' : 'text-gray-700'}`}>
+                        {t.sellerName || '-'}
                       </td>
                       <td className={`px-6 py-4 ${isCancelled ? 'text-red-400' : 'text-gray-600'}`}>
                         {new Date(t.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}

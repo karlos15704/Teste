@@ -1,4 +1,20 @@
-import { Product } from './types';
+import { Product, User } from './types';
+
+// =================================================================================
+// 👥 ÁREA DE LOGIN (USUÁRIOS E SENHAS)
+// Para adicionar um novo funcionário:
+// 1. Copie uma linha que começa com { e termina com },
+// 2. Mude o 'id' (não pode repetir), o 'name' e a 'password'.
+// =================================================================================
+export const STAFF_USERS: User[] = [
+  { id: '1', name: 'Gerente',           password: '32034392320', role: 'admin' },
+  { id: '2', name: 'João (Caixa)',      password: '32034392320', role: 'staff' },
+  { id: '3', name: 'Maria (Caixa)',     password: '32034392320', role: 'staff' },
+  { id: '4', name: 'Extra / Folguista', password: '32034392320', role: 'staff' },
+  
+  // Exemplo de como adicionar um novo (apague as barras // para ativar):
+  // { id: '5', name: 'Pedro', password: '333', role: 'staff' },
+];
 
 // Mock Products - Iscas de Frango Theme
 export const MOCK_PRODUCTS: Product[] = [
