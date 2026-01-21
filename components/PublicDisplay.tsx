@@ -1,6 +1,6 @@
-import React, { useMemo } from 'react';
+import React, { useMemo, useState, useEffect } from 'react';
 import { Transaction } from '../types';
-import { ChefHat, CheckCircle2, Flame } from 'lucide-react';
+import { ChefHat, CheckCircle2, Flame, Clock } from 'lucide-react';
 import { MASCOT_URL, APP_NAME, SCHOOL_CLASS } from '../constants';
 
 interface PublicDisplayProps {
@@ -8,6 +8,15 @@ interface PublicDisplayProps {
 }
 
 const PublicDisplay: React.FC<PublicDisplayProps> = ({ transactions }) => {
+  const [currentTime, setCurrentTime] = useState(new Date());
+
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setCurrentTime(new Date());
+    }, 1000);
+    return () => clearInterval(timer);
+  }, []);
+
   const startOfDay = new Date();
   startOfDay.setHours(0, 0, 0, 0);
 
@@ -33,18 +42,40 @@ const PublicDisplay: React.FC<PublicDisplayProps> = ({ transactions }) => {
       <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,_var(--tw-gradient-stops))] from-orange-900/20 via-gray-900 to-gray-900 pointer-events-none"></div>
 
       {/* Header */}
-      <header className="bg-black/40 backdrop-blur-md border-b border-white/10 p-4 flex items-center justify-between z-10">
-        <div className="flex items-center gap-4">
-           <img src={MASCOT_URL} alt="Mascote" className="h-16 w-16 object-contain animate-mascot-slow" />
-           <h1 className="text-4xl font-black text-white tracking-tighter uppercase drop-shadow-[0_0_10px_rgba(234,88,12,0.5)]">
+      <header className="bg-black/40 backdrop-blur-md border-b border-white/10 p-4 flex items-center justify-between z-10 h-24">
+        
+        {/* Esquerda: Status Ao Vivo */}
+        <div className="flex-1 flex items-center justify-start">
+            <div className="flex items-center gap-2 bg-white/5 px-4 py-2 rounded-full border border-white/10 backdrop-blur-sm">
+               <div className="w-3 h-3 bg-red-500 rounded-full animate-pulse shadow-[0_0_10px_rgba(239,68,68,0.8)]"></div>
+               <span className="text-white/80 font-mono font-bold text-lg tracking-wider">
+                 AO VIVO
+               </span>
+            </div>
+        </div>
+
+        {/* Centro: Mascote e Nome */}
+        <div className="flex-[2] flex items-center justify-center gap-4">
+           <img 
+             src={MASCOT_URL} 
+             alt="Mascote" 
+             className="h-20 w-20 object-contain animate-mascot-slow drop-shadow-[0_0_15px_rgba(234,88,12,0.3)]" 
+           />
+           <h1 className="text-5xl font-black text-white tracking-tighter uppercase drop-shadow-[0_0_10px_rgba(234,88,12,0.5)]" style={{ textShadow: '4px 4px 0px rgba(0,0,0,0.5)' }}>
              {APP_NAME}
            </h1>
         </div>
-        <div className="flex items-center gap-2">
-           <div className="w-3 h-3 bg-red-500 rounded-full animate-pulse"></div>
-           <span className="text-white/80 font-mono font-bold text-xl">
-             AO VIVO
-           </span>
+
+        {/* Direita: Relógio */}
+        <div className="flex-1 flex items-center justify-end">
+            <div className="text-right">
+                <div className="text-4xl font-mono font-bold text-white leading-none tracking-widest tabular-nums">
+                    {currentTime.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}
+                </div>
+                <div className="text-xs text-white/40 font-bold uppercase tracking-[0.2em] mt-1 mr-1">
+                    {currentTime.toLocaleDateString([], { weekday: 'long', day: 'numeric', month: 'short' }).replace('.', '')}
+                </div>
+            </div>
         </div>
       </header>
 
