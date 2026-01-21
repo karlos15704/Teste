@@ -9,7 +9,7 @@ import KitchenDisplay from './components/KitchenDisplay';
 import LoginScreen from './components/LoginScreen';
 import UserManagement from './components/UserManagement';
 import { supabase, fetchTransactions, createTransaction, updateTransactionStatus, updateKitchenStatus, subscribeToTransactions } from './services/supabase';
-import { LayoutGrid, BarChart3, Flame, CheckCircle2, ChefHat, WifiOff, LogOut, UserCircle2, Users as UsersIcon, RefreshCw, Store } from 'lucide-react';
+import { LayoutGrid, BarChart3, Flame, CheckCircle2, ChefHat, WifiOff, LogOut, UserCircle2, Users as UsersIcon, RefreshCw } from 'lucide-react';
 
 const App: React.FC = () => {
   // Login & Users State
@@ -46,7 +46,6 @@ const App: React.FC = () => {
       if (user.role === 'kitchen') {
         setCurrentView('kitchen');
       } else if (user.role === 'staff') {
-        // Caixa vê apenas o PDV
         setCurrentView('pos');
       }
     }
@@ -109,7 +108,6 @@ const App: React.FC = () => {
   // --- LOGIN ACTION (WRAPPER PARA SALVAR SESSÃO) ---
   const handleLogin = (user: User) => {
     setCurrentUser(user);
-    // Salva a sessão para não perder ao recarregar
     localStorage.setItem('active_user', JSON.stringify(user));
     
     // REDIRECIONAMENTO AUTOMÁTICO POR CARGO
@@ -179,38 +177,46 @@ const App: React.FC = () => {
   const clearCart = () => setCart([]);
 
   const handleCheckout = async (discount: number, method: PaymentMethod, change?: number, amountPaid?: number) => {
-    const subtotal = cart.reduce((acc, item) => acc + (item.price * item.quantity), 0);
-    const total = Math.max(0, subtotal - discount);
-    
-    const orderNumber = nextOrderNumber.toString();
-    const id = generateId();
+    try {
+      const subtotal = cart.reduce((acc, item) => acc + (item.price * item.quantity), 0);
+      const total = Math.max(0, subtotal - discount);
+      
+      // Fallback robusto para número do pedido
+      const safeOrderNumber = (nextOrderNumber || 1).toString();
+      const id = generateId();
 
-    const newTransaction: Transaction = {
-      id,
-      orderNumber,
-      timestamp: Date.now(),
-      items: [...cart],
-      subtotal,
-      discount,
-      total,
-      paymentMethod: method,
-      amountPaid,
-      change,
-      sellerName: currentUser?.name || 'Desconhecido',
-      status: 'completed',
-      kitchenStatus: 'pending'
-    };
+      const newTransaction: Transaction = {
+        id,
+        orderNumber: safeOrderNumber,
+        timestamp: Date.now(),
+        items: [...cart],
+        subtotal,
+        discount,
+        total,
+        paymentMethod: method,
+        amountPaid,
+        change,
+        sellerName: currentUser?.name || 'Caixa',
+        status: 'completed',
+        kitchenStatus: 'pending'
+      };
 
-    setTransactions(prev => [...prev, newTransaction]);
-    setLastCompletedOrder({ number: orderNumber, change });
-    clearCart();
-    setNextOrderNumber(prev => prev + 1);
+      // 1. Atualização Otimista da UI (Isso acontece instantaneamente)
+      setTransactions(prev => [...prev, newTransaction]);
+      setLastCompletedOrder({ number: safeOrderNumber, change });
+      clearCart();
+      setNextOrderNumber(prev => (prev || 1) + 1);
 
-    if (isConnected) {
-      await createTransaction(newTransaction);
-    } else {
-      const current = JSON.parse(localStorage.getItem('pos_transactions') || '[]');
-      localStorage.setItem('pos_transactions', JSON.stringify([...current, newTransaction]));
+      // 2. Persistência Assíncrona (Sem bloquear a UI)
+      if (isConnected) {
+        await createTransaction(newTransaction);
+      } else {
+        const current = JSON.parse(localStorage.getItem('pos_transactions') || '[]');
+        localStorage.setItem('pos_transactions', JSON.stringify([...current, newTransaction]));
+      }
+    } catch (error) {
+      console.error("Erro crítico no checkout:", error);
+      alert("Erro ao finalizar venda. Verifique se o carrinho não está vazio.");
     }
   };
 
@@ -246,7 +252,6 @@ const App: React.FC = () => {
     setCart([]);
     setCurrentView('pos');
     setShowLogoutModal(false);
-    // Remove sessão salva
     localStorage.removeItem('active_user');
   };
 
@@ -263,7 +268,7 @@ const App: React.FC = () => {
     );
   }
 
-  // Se não estiver logado, mostra a tela de login (usando a lista dinâmica de usuários)
+  // Se não estiver logado
   if (!currentUser) {
     return <LoginScreen availableUsers={users} onLogin={handleLogin} />;
   }
@@ -442,7 +447,8 @@ const App: React.FC = () => {
            {isCashierUser && <span className="text-xs bg-green-100 text-green-600 px-2 py-0.5 rounded font-bold">CAIXA</span>}
         </div>
 
-        {(currentView === 'pos' && (isAdminUser || isCashierUser)) && (
+        {/* PDV / POS View - Simplified Condition */}
+        {currentView === 'pos' && (
           <>
             <div className="flex-1 flex flex-col min-w-0">
               <header className="px-6 py-4 bg-white border-b border-orange-100 shadow-sm z-10 relative flex items-center justify-center min-h-[90px]">
@@ -476,6 +482,7 @@ const App: React.FC = () => {
           </>
         )}
 
+        {/* Kitchen View */}
         {(currentView === 'kitchen' && (isAdminUser || isKitchenUser)) && (
           <div className="w-full h-full bg-slate-100">
             <KitchenDisplay 
@@ -485,6 +492,7 @@ const App: React.FC = () => {
           </div>
         )}
 
+        {/* Reports View (Admin Only) */}
         {(currentView === 'reports' && isAdminUser) && (
           <div className="w-full h-full bg-orange-50/50">
             <Reports 
@@ -496,7 +504,7 @@ const App: React.FC = () => {
           </div>
         )}
 
-        {/* View de Gerenciamento de Usuários */}
+        {/* User Management View (Admin Only) */}
         {(currentView === 'users' && isAdminUser) && (
           <div className="w-full h-full bg-orange-50/50">
             <UserManagement 

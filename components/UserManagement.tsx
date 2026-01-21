@@ -88,7 +88,7 @@ const UserManagement: React.FC<UserManagementProps> = ({ users, onAddUser, onUpd
 
           let RoleIcon = UserIcon;
           let roleColorClass = 'bg-gray-100 text-gray-500';
-          let roleLabel = 'Caixa'; // Alterado de Vendedor/Staff
+          let roleLabel = 'Caixa'; 
 
           if (user.role === 'admin') {
             RoleIcon = isProfessor ? Crown : Shield;
@@ -99,9 +99,10 @@ const UserManagement: React.FC<UserManagementProps> = ({ users, onAddUser, onUpd
             roleColorClass = 'bg-blue-100 text-blue-600';
             roleLabel = 'Cozinha / Expedição';
           } else {
-            // Staff / Caixa
+            // Staff = Caixa
             RoleIcon = Store;
             roleColorClass = 'bg-green-100 text-green-600';
+            roleLabel = 'Caixa';
           }
 
           return (
@@ -112,10 +113,7 @@ const UserManagement: React.FC<UserManagementProps> = ({ users, onAddUser, onUpd
                     <RoleIcon size={24} />
                 </div>
                 <div className="flex gap-1">
-                  {/* Botão Editar: 
-                      - O Professor pode editar qualquer um.
-                      - Outros admins NÃO podem editar o Professor. 
-                  */}
+                  {/* Botões de Ação */}
                   {(!isProfessor || currentUserIsProfessor) && (
                     <button 
                       onClick={() => openEdit(user)}
@@ -126,10 +124,6 @@ const UserManagement: React.FC<UserManagementProps> = ({ users, onAddUser, onUpd
                     </button>
                   )}
 
-                  {/* Botão Excluir:
-                      - Ninguém deleta a si mesmo.
-                      - Ninguém deleta o Professor (ID 0).
-                  */}
                   {user.id !== currentUser.id && !isProfessor && (
                     <button 
                         onClick={() => {
