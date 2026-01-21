@@ -7,8 +7,8 @@ interface PublicDisplayProps {
   transactions: Transaction[];
 }
 
-// Som de Campainha de Atendimento (Ding suave)
-const BELL_SOUND_URL = "https://cdn.pixabay.com/audio/2022/03/15/audio_c8c8a73467.mp3";
+// Som de Campainha de Atendimento (Fonte estável: Google Demo Assets - Glass Ting)
+const BELL_SOUND_URL = "https://codeskulptor-demos.commondatastorage.googleapis.com/assets/sound/glass_ting.mp3";
 
 const PublicDisplay: React.FC<PublicDisplayProps> = ({ transactions }) => {
   const [currentTime, setCurrentTime] = useState(new Date());
@@ -50,24 +50,38 @@ const PublicDisplay: React.FC<PublicDisplayProps> = ({ transactions }) => {
 
   // --- FUNÇÃO DE ÁUDIO MELHORADA ---
   const playAudio = (orderNumber: string) => {
+    // Criação do objeto de áudio com tratamento de erro
     const audio = new Audio(BELL_SOUND_URL);
-    audio.volume = 0.6;
-    audio.play().catch(e => console.error("Erro ao tocar campainha:", e));
+    audio.volume = 0.7; // Volume confortável
+    
+    // Tenta tocar o som
+    const playPromise = audio.play();
+    
+    if (playPromise !== undefined) {
+      playPromise.catch(error => {
+        console.warn("Autoplay bloqueado ou erro no áudio:", error);
+      });
+    }
 
     setTimeout(() => {
         if ('speechSynthesis' in window) {
             window.speechSynthesis.cancel();
-            const text = `Pedido pronto. Senha ${orderNumber}.`;
+            
+            // Texto curto e direto para soar menos robótico
+            const text = `Senha ${orderNumber}.`;
             const utterance = new SpeechSynthesisUtterance(text);
+            
             utterance.lang = 'pt-BR';
             utterance.volume = 1.0; 
-            utterance.rate = 0.9;
-            utterance.pitch = 1.0;
+            utterance.rate = 0.9; // Levemente mais lento para clareza
+            utterance.pitch = 1.0; // Tom natural
             
             const voices = window.speechSynthesis.getVoices();
+            // Tenta priorizar vozes de alta qualidade (Google ou Microsoft)
             const bestVoice = voices.find(v => 
                 (v.name.includes('Google') && v.lang.includes('pt-BR')) ||
-                (v.name.includes('Luciana') && v.lang.includes('pt-BR')) ||
+                (v.name.includes('Luciana') && v.lang.includes('pt-BR')) || // iOS
+                (v.name.includes('Microsoft') && v.lang.includes('pt-BR')) || // Windows
                 v.lang === 'pt-BR'
             );
 
@@ -76,7 +90,7 @@ const PublicDisplay: React.FC<PublicDisplayProps> = ({ transactions }) => {
             }
             window.speechSynthesis.speak(utterance);
         }
-    }, 800);
+    }, 1000); // Delay de 1s para o "Ding" tocar limpo antes da voz
   };
 
   useEffect(() => {
