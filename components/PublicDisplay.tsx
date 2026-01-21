@@ -10,9 +10,15 @@ interface PublicDisplayProps {
 const PublicDisplay: React.FC<PublicDisplayProps> = ({ transactions }) => {
   const [currentTime, setCurrentTime] = useState(new Date());
   
-  // Estado para controlar a animação de celebração (Pedido Pronto)
+  // Estado para controlar a animação de celebração (Pedido Atualmente na Tela)
   const [celebratingOrder, setCelebratingOrder] = useState<Transaction | null>(null);
-  const prevTopReadyIdRef = useRef<string | null>(null);
+  
+  // FILA DE CELEBRAÇÃO: Armazena pedidos que precisam ser mostrados
+  const [celebrationQueue, setCelebrationQueue] = useState<Transaction[]>([]);
+  
+  // Histórico de IDs processados para não repetir o mesmo pedido
+  const processedOrderIdsRef = useRef<Set<string>>(new Set());
+  const isFirstLoadRef = useRef<boolean>(true);
 
   useEffect(() => {
     const timer = setInterval(() => {
@@ -45,20 +51,15 @@ const PublicDisplay: React.FC<PublicDisplayProps> = ({ transactions }) => {
       // Cancela falas anteriores
       window.speechSynthesis.cancel();
       
-      // Texto com exclamações e caixa alta ajuda na entonação de alguns navegadores
       const text = `ATENÇÃO!!! TÁ FRITOOOO!!! SENHA ${orderNumber}!!! VEM BUSCAR!!!`;
       
       const utterance = new SpeechSynthesisUtterance(text);
       utterance.lang = 'pt-BR';
-      utterance.volume = 1.0; // Máximo permitido pelo navegador
-      utterance.rate = 1.2;   // Mais rápido = mais energia/urgência
-      utterance.pitch = 1.4;  // Mais agudo = simula euforia/grito
+      utterance.volume = 1.0; 
+      utterance.rate = 1.2;   
+      utterance.pitch = 1.4;  
       
-      // Tenta pegar uma voz específica do Google ou Microsoft que costumam ser melhores
-      // As vozes carregam assincronamente, então tentamos pegar as disponíveis agora
       const voices = window.speechSynthesis.getVoices();
-      
-      // Prioridade: Voz do Google PT-BR (geralmente mais natural/alta) -> Microsoft -> Qualquer PT-BR
       const bestVoice = voices.find(v => v.name.includes('Google') && v.lang.includes('pt-BR')) ||
                         voices.find(v => v.name.includes('Brazil') || v.lang.includes('pt-BR'));
 
@@ -70,37 +71,62 @@ const PublicDisplay: React.FC<PublicDisplayProps> = ({ transactions }) => {
     }
   };
 
-  // Carregar as vozes assim que o componente montar (para garantir que estarão prontas)
+  // Carregar vozes
   useEffect(() => {
     if ('speechSynthesis' in window) {
         window.speechSynthesis.getVoices();
     }
   }, []);
 
-  // EFEITO 1: Detectar quando um pedido NOVO entra na lista de prontos
+  // === LÓGICA DE DETECÇÃO DE NOVOS PEDIDOS ===
   useEffect(() => {
-    if (readyOrders.length > 0) {
-      const newestOrder = readyOrders[0];
-      
-      // Se o ID do pedido do topo mudou, significa que é um novo pedido pronto
-      if (prevTopReadyIdRef.current !== newestOrder.id) {
-         // Evita disparar na primeira renderização da página (se já tiver pedidos prontos antigos carregados ao abrir)
-         if (prevTopReadyIdRef.current !== null) {
-            setCelebratingOrder(newestOrder);
-            playAudio(newestOrder.orderNumber); // Toca o som
-         }
-         // Atualiza a referência
-         prevTopReadyIdRef.current = newestOrder.id;
-      }
+    if (readyOrders.length === 0) return;
+
+    // 1. Na primeira carga, marcamos todos como "vistos" para não gritar pedidos antigos ao recarregar a página
+    if (isFirstLoadRef.current) {
+        readyOrders.forEach(t => processedOrderIdsRef.current.add(t.id));
+        isFirstLoadRef.current = false;
+        return;
+    }
+
+    // 2. Detectar NOVOS pedidos que ainda não foram processados
+    // REMOVIDO: Lógica de limpar IDs quando voltam para a cozinha. 
+    // Motivo: Se o pedido volta pra cozinha (erro) e depois fica pronto de novo, não queremos celebrar 2 vezes.
+    
+    const newItems = readyOrders.filter(t => !processedOrderIdsRef.current.has(t.id));
+    
+    if (newItems.length > 0) {
+        // Marca como processados
+        newItems.forEach(t => processedOrderIdsRef.current.add(t.id));
+        
+        // Adiciona à FILA de celebração
+        const sortedNewItems = [...newItems].sort((a, b) => a.timestamp - b.timestamp);
+        
+        setCelebrationQueue(prevQueue => [...prevQueue, ...sortedNewItems]);
     }
   }, [readyOrders]);
 
-  // EFEITO 2: Gerenciar o tempo de exibição (Separado para não ser cancelado por updates de dados)
+  // === LÓGICA DE PROCESSAMENTO DA FILA ===
+  useEffect(() => {
+    // Se não estamos celebrando nada agora E tem gente na fila
+    if (!celebratingOrder && celebrationQueue.length > 0) {
+        const nextOrder = celebrationQueue[0];
+        
+        // Inicia a festa
+        setCelebratingOrder(nextOrder);
+        playAudio(nextOrder.orderNumber);
+
+        // Remove esse item da fila
+        setCelebrationQueue(prev => prev.slice(1));
+    }
+  }, [celebratingOrder, celebrationQueue]);
+
+  // === TIMER DA CELEBRAÇÃO ===
   useEffect(() => {
     if (celebratingOrder) {
       const timer = setTimeout(() => {
-        setCelebratingOrder(null);
-      }, 10000); // 10 Segundos
+        setCelebratingOrder(null); // Libera o espaço para o próximo da fila
+      }, 10000); // 10 Segundos de glória
       
       return () => clearTimeout(timer);
     }
@@ -113,7 +139,7 @@ const PublicDisplay: React.FC<PublicDisplayProps> = ({ transactions }) => {
       {celebratingOrder && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/95 backdrop-blur-sm animate-in zoom-in-50 duration-500">
            
-           {/* Fundo de Fogo (Reaproveitando classes do index.html) */}
+           {/* Fundo de Fogo */}
            <div className="absolute inset-0 opacity-40 overflow-hidden pointer-events-none">
               <div className="fire-container scale-150 origin-bottom">
                   <div className="flame-base"></div>
@@ -220,7 +246,7 @@ const PublicDisplay: React.FC<PublicDisplayProps> = ({ transactions }) => {
            <div className="flex-1 p-6 overflow-hidden">
              <div className="grid grid-cols-2 gap-4 content-start">
                 {preparingOrders.map(order => (
-                  <div key={order.id} className="bg-white/5 border border-white/10 rounded-xl p-4 flex flex-col items-center justify-center animate-in zoom-in duration-300">
+                  <div key={order.id} className="bg-white/5 border border-white/10 rounded-xl p-4 flex flex-col items-center justify-center">
                      <span className="text-yellow-100/60 text-xs font-bold uppercase tracking-widest mb-1">Senha</span>
                      <span className="text-5xl font-black text-yellow-400 tracking-tighter">#{order.orderNumber}</span>
                   </div>
