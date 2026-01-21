@@ -9,7 +9,7 @@ import KitchenDisplay from './components/KitchenDisplay';
 import LoginScreen from './components/LoginScreen';
 import UserManagement from './components/UserManagement';
 import { supabase, fetchTransactions, createTransaction, updateTransactionStatus, updateKitchenStatus, subscribeToTransactions } from './services/supabase';
-import { LayoutGrid, BarChart3, Flame, CheckCircle2, ChefHat, WifiOff, LogOut, UserCircle2, Users as UsersIcon, RefreshCw } from 'lucide-react';
+import { LayoutGrid, BarChart3, Flame, CheckCircle2, ChefHat, WifiOff, LogOut, UserCircle2, Users as UsersIcon, RefreshCw, Store } from 'lucide-react';
 
 const App: React.FC = () => {
   // Login & Users State
@@ -41,9 +41,13 @@ const App: React.FC = () => {
     if (savedSession && !currentUser) {
       const user = JSON.parse(savedSession);
       setCurrentUser(user);
-      // Se for cozinha, força a view
+      
+      // LOGIC TO FORCE VIEWS BASED ON ROLE
       if (user.role === 'kitchen') {
         setCurrentView('kitchen');
+      } else if (user.role === 'staff') {
+        // Caixa vê apenas o PDV
+        setCurrentView('pos');
       }
     }
 
@@ -92,7 +96,6 @@ const App: React.FC = () => {
     });
 
     // ATUALIZAÇÃO AUTOMÁTICA A CADA 3 SEGUNDOS
-    // Isso garante que a tela da cozinha (e outras) recebam novos pedidos quase instantaneamente
     const intervalId = setInterval(() => {
       loadData();
     }, 3000);
@@ -109,9 +112,11 @@ const App: React.FC = () => {
     // Salva a sessão para não perder ao recarregar
     localStorage.setItem('active_user', JSON.stringify(user));
     
-    // Se for da cozinha, redireciona automaticamente
+    // REDIRECIONAMENTO AUTOMÁTICO POR CARGO
     if (user.role === 'kitchen') {
       setCurrentView('kitchen');
+    } else if (user.role === 'staff') {
+      setCurrentView('pos');
     } else {
       setCurrentView('pos');
     }
@@ -263,8 +268,10 @@ const App: React.FC = () => {
     return <LoginScreen availableUsers={users} onLogin={handleLogin} />;
   }
 
-  // Determina se o usuário é da cozinha para bloquear interface
+  // --- PERMISSION CHECKS ---
   const isKitchenUser = currentUser.role === 'kitchen';
+  const isCashierUser = currentUser.role === 'staff';
+  const isAdminUser = currentUser.role === 'admin';
 
   return (
     <div className="h-screen w-screen flex overflow-hidden bg-orange-50 relative">
@@ -347,8 +354,8 @@ const App: React.FC = () => {
           <Flame size={24} fill="currentColor" className="text-orange-500 animate-pulse" />
         </div>
         
-        {/* BOTÃO CAIXA (Escondido se for Cozinha) */}
-        {!isKitchenUser && (
+        {/* BOTÃO CAIXA (Visível para Admin e Caixa) */}
+        {(isAdminUser || isCashierUser) && (
           <button 
             onClick={() => setCurrentView('pos')}
             className={`p-3 rounded-2xl transition-all duration-300 group relative ${currentView === 'pos' ? 'bg-orange-600 text-white shadow-lg shadow-orange-900/50 scale-105' : 'text-gray-400 hover:text-white hover:bg-gray-800 hover:scale-110'}`}
@@ -361,21 +368,23 @@ const App: React.FC = () => {
           </button>
         )}
 
-        {/* BOTÃO COZINHA (Sempre visível ou único visível) */}
-        <button 
-          onClick={() => setCurrentView('kitchen')}
-          className={`p-3 rounded-2xl transition-all duration-300 group relative ${currentView === 'kitchen' ? 'bg-orange-600 text-white shadow-lg shadow-orange-900/50 scale-105' : 'text-gray-400 hover:text-white hover:bg-gray-800 hover:scale-110'}`}
-          title="Cozinha / Expedição"
-        >
-          <ChefHat size={24} className={`transition-transform duration-300 ${currentView === 'kitchen' ? '' : 'group-hover:rotate-6'}`} />
-          {currentView === 'kitchen' && (
-            <span className="absolute -right-1 -top-1 w-3 h-3 bg-white border-2 border-gray-900 rounded-full animate-bounce" />
-            
-          )}
-        </button>
+        {/* BOTÃO COZINHA (Visível para Admin e Cozinha) */}
+        {(isAdminUser || isKitchenUser) && (
+          <button 
+            onClick={() => setCurrentView('kitchen')}
+            className={`p-3 rounded-2xl transition-all duration-300 group relative ${currentView === 'kitchen' ? 'bg-orange-600 text-white shadow-lg shadow-orange-900/50 scale-105' : 'text-gray-400 hover:text-white hover:bg-gray-800 hover:scale-110'}`}
+            title="Cozinha / Expedição"
+          >
+            <ChefHat size={24} className={`transition-transform duration-300 ${currentView === 'kitchen' ? '' : 'group-hover:rotate-6'}`} />
+            {currentView === 'kitchen' && (
+              <span className="absolute -right-1 -top-1 w-3 h-3 bg-white border-2 border-gray-900 rounded-full animate-bounce" />
+              
+            )}
+          </button>
+        )}
 
-        {/* BOTÃO RELATÓRIOS (Escondido se for Cozinha) */}
-        {!isKitchenUser && (
+        {/* BOTÃO RELATÓRIOS (Apenas Admin) */}
+        {isAdminUser && (
           <button 
             onClick={() => setCurrentView('reports')}
             className={`p-3 rounded-2xl transition-all duration-300 group relative ${currentView === 'reports' ? 'bg-orange-600 text-white shadow-lg shadow-orange-900/50 scale-105' : 'text-gray-400 hover:text-white hover:bg-gray-800 hover:scale-110'}`}
@@ -389,7 +398,7 @@ const App: React.FC = () => {
         )}
 
         {/* ADMIN ONLY: Users Management */}
-        {!isKitchenUser && currentUser.role === 'admin' && (
+        {isAdminUser && (
           <button 
             onClick={() => setCurrentView('users')}
             className={`p-3 rounded-2xl transition-all duration-300 group relative ${currentView === 'users' ? 'bg-orange-600 text-white shadow-lg shadow-orange-900/50 scale-105' : 'text-gray-400 hover:text-white hover:bg-gray-800 hover:scale-110'}`}
@@ -430,9 +439,10 @@ const App: React.FC = () => {
            <UserCircle2 size={16} className="text-orange-600"/>
            <span className="text-xs font-bold text-gray-700 uppercase">{currentUser.name}</span>
            {isKitchenUser && <span className="text-xs bg-blue-100 text-blue-600 px-2 py-0.5 rounded font-bold">COZINHA</span>}
+           {isCashierUser && <span className="text-xs bg-green-100 text-green-600 px-2 py-0.5 rounded font-bold">CAIXA</span>}
         </div>
 
-        {(currentView === 'pos' && !isKitchenUser) && (
+        {(currentView === 'pos' && (isAdminUser || isCashierUser)) && (
           <>
             <div className="flex-1 flex flex-col min-w-0">
               <header className="px-6 py-4 bg-white border-b border-orange-100 shadow-sm z-10 relative flex items-center justify-center min-h-[90px]">
@@ -466,7 +476,7 @@ const App: React.FC = () => {
           </>
         )}
 
-        {currentView === 'kitchen' && (
+        {(currentView === 'kitchen' && (isAdminUser || isKitchenUser)) && (
           <div className="w-full h-full bg-slate-100">
             <KitchenDisplay 
               transactions={transactions} 
@@ -475,7 +485,7 @@ const App: React.FC = () => {
           </div>
         )}
 
-        {(currentView === 'reports' && !isKitchenUser) && (
+        {(currentView === 'reports' && isAdminUser) && (
           <div className="w-full h-full bg-orange-50/50">
             <Reports 
               key={transactions.length}
@@ -487,7 +497,7 @@ const App: React.FC = () => {
         )}
 
         {/* View de Gerenciamento de Usuários */}
-        {currentView === 'users' && currentUser.role === 'admin' && !isKitchenUser && (
+        {(currentView === 'users' && isAdminUser) && (
           <div className="w-full h-full bg-orange-50/50">
             <UserManagement 
               users={users}

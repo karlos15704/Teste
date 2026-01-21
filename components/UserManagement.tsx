@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { User } from '../types';
 import { generateId } from '../utils';
-import { Plus, Trash2, Edit2, Shield, User as UserIcon, Save, X, Key, Crown, ChefHat } from 'lucide-react';
+import { Plus, Trash2, Edit2, Shield, User as UserIcon, Save, X, Key, Crown, ChefHat, Store } from 'lucide-react';
 
 interface UserManagementProps {
   users: User[];
@@ -88,7 +88,7 @@ const UserManagement: React.FC<UserManagementProps> = ({ users, onAddUser, onUpd
 
           let RoleIcon = UserIcon;
           let roleColorClass = 'bg-gray-100 text-gray-500';
-          let roleLabel = 'Vendedor / Staff';
+          let roleLabel = 'Caixa'; // Alterado de Vendedor/Staff
 
           if (user.role === 'admin') {
             RoleIcon = isProfessor ? Crown : Shield;
@@ -98,6 +98,10 @@ const UserManagement: React.FC<UserManagementProps> = ({ users, onAddUser, onUpd
             RoleIcon = ChefHat;
             roleColorClass = 'bg-blue-100 text-blue-600';
             roleLabel = 'Cozinha / Expedição';
+          } else {
+            // Staff / Caixa
+            RoleIcon = Store;
+            roleColorClass = 'bg-green-100 text-green-600';
           }
 
           return (
@@ -146,7 +150,7 @@ const UserManagement: React.FC<UserManagementProps> = ({ users, onAddUser, onUpd
                 {user.name}
                 {isProfessor && <span className="text-xs bg-orange-600 text-white px-2 py-0.5 rounded-full">MASTER</span>}
               </h3>
-              <span className={`text-xs font-bold uppercase tracking-wider mb-4 ${user.role === 'admin' ? 'text-orange-500' : user.role === 'kitchen' ? 'text-blue-500' : 'text-gray-400'}`}>
+              <span className={`text-xs font-bold uppercase tracking-wider mb-4 ${user.role === 'admin' ? 'text-orange-500' : user.role === 'kitchen' ? 'text-blue-500' : 'text-green-600'}`}>
                 {roleLabel}
               </span>
 
@@ -199,15 +203,15 @@ const UserManagement: React.FC<UserManagementProps> = ({ users, onAddUser, onUpd
               {/* Se estiver editando o Professor, não permite mudar o cargo dele, ele é sempre Admin */}
               {editingUser?.id !== '0' && (
                 <div>
-                  <label className="block text-xs font-bold text-gray-500 uppercase mb-1">Nível de Acesso</label>
+                  <label className="block text-xs font-bold text-gray-500 uppercase mb-1">Função / Cargo</label>
                   <div className="grid grid-cols-3 gap-2">
                     <button
                       type="button"
                       onClick={() => setRole('staff')}
-                      className={`p-2 rounded-xl border-2 font-bold text-xs flex flex-col items-center gap-2 transition-colors ${role === 'staff' ? 'border-orange-500 bg-orange-50 text-orange-700' : 'border-gray-200 text-gray-400 hover:border-gray-300'}`}
+                      className={`p-2 rounded-xl border-2 font-bold text-xs flex flex-col items-center gap-2 transition-colors ${role === 'staff' ? 'border-green-500 bg-green-50 text-green-700' : 'border-gray-200 text-gray-400 hover:border-gray-300'}`}
                     >
-                      <UserIcon size={20} />
-                      Vendedor
+                      <Store size={20} />
+                      Caixa
                     </button>
                     <button
                       type="button"
