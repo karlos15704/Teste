@@ -39,29 +39,51 @@ const PublicDisplay: React.FC<PublicDisplayProps> = ({ transactions }) => {
       .slice(0, 8);
   }, [transactions]);
 
-  // EFEITO: Detectar quando um pedido NOVO entra na lista de prontos
+  // --- FUNÇÃO DE ÁUDIO (Voz do Navegador) ---
+  const playAudio = (orderNumber: string) => {
+    if ('speechSynthesis' in window) {
+      // Cancela falas anteriores para não encavalar
+      window.speechSynthesis.cancel();
+      
+      const text = `Tá Fritoooo! Vem buscar a senha ${orderNumber}!`;
+      const utterance = new SpeechSynthesisUtterance(text);
+      utterance.lang = 'pt-BR'; // Português Brasil
+      utterance.rate = 1.1;     // Um pouco mais rápido para dar energia
+      utterance.pitch = 1.1;    // Tom um pouco mais agudo/alegre
+      utterance.volume = 1.0;   // Volume máximo
+      
+      window.speechSynthesis.speak(utterance);
+    }
+  };
+
+  // EFEITO 1: Detectar quando um pedido NOVO entra na lista de prontos
   useEffect(() => {
     if (readyOrders.length > 0) {
       const newestOrder = readyOrders[0];
       
       // Se o ID do pedido do topo mudou, significa que é um novo pedido pronto
       if (prevTopReadyIdRef.current !== newestOrder.id) {
-         // Evita disparar na primeira renderização da página (se já tiver pedidos prontos antigos)
+         // Evita disparar na primeira renderização da página (se já tiver pedidos prontos antigos carregados ao abrir)
          if (prevTopReadyIdRef.current !== null) {
             setCelebratingOrder(newestOrder);
-            
-            // Remove a animação após 7 segundos
-            const timer = setTimeout(() => {
-              setCelebratingOrder(null);
-            }, 7000);
-            
-            return () => clearTimeout(timer);
+            playAudio(newestOrder.orderNumber); // Toca o som
          }
          // Atualiza a referência
          prevTopReadyIdRef.current = newestOrder.id;
       }
     }
   }, [readyOrders]);
+
+  // EFEITO 2: Gerenciar o tempo de exibição (Separado para não ser cancelado por updates de dados)
+  useEffect(() => {
+    if (celebratingOrder) {
+      const timer = setTimeout(() => {
+        setCelebratingOrder(null);
+      }, 10000); // 10 Segundos
+      
+      return () => clearTimeout(timer);
+    }
+  }, [celebratingOrder]);
 
   return (
     <div className="h-screen w-screen bg-gray-900 flex flex-col overflow-hidden relative">
