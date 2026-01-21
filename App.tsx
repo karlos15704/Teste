@@ -523,7 +523,7 @@ const App: React.FC = () => {
       </nav>
 
       {/* Main Content Area */}
-      <main className="flex-1 flex flex-col overflow-hidden relative">
+      <main className="flex-1 flex flex-col overflow-hidden relative pb-16 md:pb-0">
         {/* User Info Badge (Desktop) / Header (Mobile) */}
         <div className="md:absolute md:top-4 md:right-6 z-40 bg-white/90 backdrop-blur border-b md:border border-orange-200 px-4 py-3 md:py-1.5 md:rounded-full shadow-sm flex items-center justify-between md:justify-start gap-2 w-full md:w-auto">
            <div className="flex items-center gap-2">
@@ -611,11 +611,11 @@ const App: React.FC = () => {
           />
         )}
 
-        {/* Mobile Cart Toggle Button */}
+        {/* Mobile Cart Toggle Button - Moved Up */}
         {currentView === 'pos' && !isMobileCartOpen && (
           <button
             onClick={() => setIsMobileCartOpen(true)}
-            className="md:hidden fixed bottom-6 right-6 bg-orange-600 text-white p-4 rounded-full shadow-lg shadow-orange-600/40 z-50 animate-bounce"
+            className="md:hidden fixed bottom-20 right-6 bg-orange-600 text-white p-4 rounded-full shadow-lg shadow-orange-600/40 z-50 animate-bounce"
           >
             <div className="relative">
               <ShoppingCart size={24} />
@@ -627,6 +627,52 @@ const App: React.FC = () => {
             </div>
           </button>
         )}
+
+        {/* MOBILE NAVIGATION BAR (BOTTOM) */}
+        <div className="md:hidden fixed bottom-0 left-0 w-full bg-white border-t border-orange-100 z-40 flex justify-around items-center h-16 shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.05)] safe-area-pb">
+          
+          {/* 1. POS / Vendas */}
+          {(isAdminUser || isCashierUser) && (
+            <button 
+              onClick={() => setCurrentView('pos')}
+              className={`flex flex-col items-center justify-center w-full h-full gap-1 transition-colors ${currentView === 'pos' ? 'text-orange-600 bg-orange-50/50' : 'text-gray-400 hover:text-gray-600'}`}
+            >
+              <LayoutGrid size={22} className={currentView === 'pos' ? 'fill-current' : ''} />
+              <span className="text-[10px] font-bold uppercase">Vendas</span>
+            </button>
+          )}
+
+          {/* 2. Cozinha */}
+          {(isAdminUser || isKitchenUser) && (
+            <button 
+              onClick={() => setCurrentView('kitchen')}
+              className={`flex flex-col items-center justify-center w-full h-full gap-1 transition-colors ${currentView === 'kitchen' ? 'text-orange-600 bg-orange-50/50' : 'text-gray-400 hover:text-gray-600'}`}
+            >
+              <ChefHat size={22} className={currentView === 'kitchen' ? 'fill-current' : ''} />
+              <span className="text-[10px] font-bold uppercase">Cozinha</span>
+            </button>
+          )}
+
+          {/* 3. Relatórios */}
+          {isAdminUser && (
+            <button 
+              onClick={() => setCurrentView('reports')}
+              className={`flex flex-col items-center justify-center w-full h-full gap-1 transition-colors ${currentView === 'reports' ? 'text-orange-600 bg-orange-50/50' : 'text-gray-400 hover:text-gray-600'}`}
+            >
+              <BarChart3 size={22} className={currentView === 'reports' ? 'fill-current' : ''} />
+              <span className="text-[10px] font-bold uppercase">Gestão</span>
+            </button>
+          )}
+
+          {/* 4. Equipe */}
+          <button 
+            onClick={() => setCurrentView('users')}
+            className={`flex flex-col items-center justify-center w-full h-full gap-1 transition-colors ${currentView === 'users' ? 'text-orange-600 bg-orange-50/50' : 'text-gray-400 hover:text-gray-600'}`}
+          >
+            <UsersIcon size={22} className={currentView === 'users' ? 'fill-current' : ''} />
+            <span className="text-[10px] font-bold uppercase">Equipe</span>
+          </button>
+        </div>
 
       </main>
     </div>
