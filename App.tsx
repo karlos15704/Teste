@@ -485,16 +485,15 @@ const App: React.FC = () => {
           </button>
         )}
 
-        {isAdminUser && (
-          <button 
-            onClick={() => setCurrentView('users')}
-            className={`p-3 rounded-2xl transition-all duration-300 group relative ${currentView === 'users' ? 'bg-orange-600 text-white shadow-lg shadow-orange-900/50 scale-105' : 'text-gray-400 hover:text-white hover:bg-gray-800 hover:scale-110'}`}
-            title="Equipe"
-          >
-            <UsersIcon size={24} className={`transition-transform duration-300 ${currentView === 'users' ? '' : 'group-hover:rotate-6'}`} />
-            {currentView === 'users' && <span className="absolute -right-1 -top-1 w-3 h-3 bg-white border-2 border-gray-900 rounded-full animate-bounce" />}
-          </button>
-        )}
+        {/* AGORA TODOS PODEM VER O BOTÃO EQUIPE */}
+        <button 
+          onClick={() => setCurrentView('users')}
+          className={`p-3 rounded-2xl transition-all duration-300 group relative ${currentView === 'users' ? 'bg-orange-600 text-white shadow-lg shadow-orange-900/50 scale-105' : 'text-gray-400 hover:text-white hover:bg-gray-800 hover:scale-110'}`}
+          title="Equipe"
+        >
+          <UsersIcon size={24} className={`transition-transform duration-300 ${currentView === 'users' ? '' : 'group-hover:rotate-6'}`} />
+          {currentView === 'users' && <span className="absolute -right-1 -top-1 w-3 h-3 bg-white border-2 border-gray-900 rounded-full animate-bounce" />}
+        </button>
 
         <div className="flex-1"></div>
 
@@ -610,8 +609,8 @@ const App: React.FC = () => {
           </div>
         )}
 
-        {/* User Management View (Admin Only) */}
-        {(currentView === 'users' && isAdminUser) && (
+        {/* User Management View (Agora acessível para todos, mas com filtros internos) */}
+        {currentView === 'users' && (
           <div className="w-full h-full bg-orange-50/50 pb-20 md:pb-0">
             <UserManagement 
               users={users}
@@ -664,19 +663,18 @@ const App: React.FC = () => {
              <span className="text-[10px] font-bold">Relatórios</span>
           </button>
         )}
-
-        {isAdminUser && (
-          <button 
-             onClick={() => {
-               setCurrentView('users');
-               setIsMobileCartOpen(false);
-             }}
-             className={`flex flex-col items-center justify-center w-full h-full ${currentView === 'users' ? 'text-orange-600' : 'text-gray-400'}`}
-          >
-             <UsersIcon size={24} className={currentView === 'users' ? 'mb-1' : ''} />
-             <span className="text-[10px] font-bold">Equipe</span>
-          </button>
-        )}
+        
+        {/* BOTÃO EQUIPE TAMBÉM NO MOBILE PARA TODOS */}
+        <button 
+            onClick={() => {
+              setCurrentView('users');
+              setIsMobileCartOpen(false);
+            }}
+            className={`flex flex-col items-center justify-center w-full h-full ${currentView === 'users' ? 'text-orange-600' : 'text-gray-400'}`}
+        >
+            <UsersIcon size={24} className={currentView === 'users' ? 'mb-1' : ''} />
+            <span className="text-[10px] font-bold">Equipe</span>
+        </button>
       </div>
     </div>
   );

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { User } from '../types';
 import { generateId } from '../utils';
 import { Plus, Trash2, Edit2, Shield, User as UserIcon, Save, X, Key, Crown, ChefHat, Store } from 'lucide-react';
@@ -14,6 +14,19 @@ interface UserManagementProps {
 const UserManagement: React.FC<UserManagementProps> = ({ users, onAddUser, onUpdateUser, onDeleteUser, currentUser }) => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingUser, setEditingUser] = useState<User | null>(null);
+
+  // Verifica se quem está logado é Admin (Gerente) ou Master (Professor)
+  const isAdminOrMaster = currentUser.role === 'admin' || currentUser.id === '0';
+
+  // Filtra quais usuários serão exibidos
+  // Se for Admin/Master: Vê todo mundo
+  // Se for Staff/Cozinha: Vê só a si mesmo
+  const displayedUsers = useMemo(() => {
+    if (isAdminOrMaster) {
+      return users;
+    }
+    return users.filter(u => u.id === currentUser.id);
+  }, [users, currentUser, isAdminOrMaster]);
 
   // Form State
   const [name, setName] = useState('');
@@ -66,21 +79,29 @@ const UserManagement: React.FC<UserManagementProps> = ({ users, onAddUser, onUpd
         <div>
           <h2 className="text-2xl font-bold text-gray-800 flex items-center gap-2">
             <Shield className="text-orange-600" />
-            Gerenciamento de Equipe
+            {isAdminOrMaster ? 'Gerenciamento de Equipe' : 'Meu Perfil'}
           </h2>
-          <p className="text-gray-500 text-sm">Adicione ou remova acesso ao sistema.</p>
+          <p className="text-gray-500 text-sm">
+            {isAdminOrMaster 
+              ? 'Adicione ou remova acesso ao sistema.' 
+              : 'Gerencie sua senha de acesso.'}
+          </p>
         </div>
-        <button 
-          onClick={() => setIsModalOpen(true)}
-          className="bg-gray-900 text-white px-4 py-2 rounded-xl font-bold hover:bg-orange-600 transition-colors flex items-center gap-2 shadow-lg"
-        >
-          <Plus size={20} />
-          NOVO USUÁRIO
-        </button>
+        
+        {/* Apenas Admins podem criar novos usuários */}
+        {isAdminOrMaster && (
+          <button 
+            onClick={() => setIsModalOpen(true)}
+            className="bg-gray-900 text-white px-4 py-2 rounded-xl font-bold hover:bg-orange-600 transition-colors flex items-center gap-2 shadow-lg"
+          >
+            <Plus size={20} />
+            NOVO USUÁRIO
+          </button>
+        )}
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-        {users.map(user => {
+        {displayedUsers.map(user => {
           // Identifica se o card atual é do "Professor"
           const isProfessor = user.id === '0';
           // Identifica se o usuário logado é o "Professor"
@@ -114,6 +135,7 @@ const UserManagement: React.FC<UserManagementProps> = ({ users, onAddUser, onUpd
                 </div>
                 <div className="flex gap-1">
                   {/* Botões de Ação */}
+                  {/* Se for Professor, só o próprio professor edita. Se não for, admin ou o dono do perfil editam */}
                   {(!isProfessor || currentUserIsProfessor) && (
                     <button 
                       onClick={() => openEdit(user)}
@@ -124,7 +146,8 @@ const UserManagement: React.FC<UserManagementProps> = ({ users, onAddUser, onUpd
                     </button>
                   )}
 
-                  {user.id !== currentUser.id && !isProfessor && (
+                  {/* Botão de Excluir: Apenas Admins veem, e não podem excluir o próprio perfil nem o Professor */}
+                  {isAdminOrMaster && user.id !== currentUser.id && !isProfessor && (
                     <button 
                         onClick={() => {
                           if(window.confirm(`Tem certeza que deseja remover ${user.name}?`)) {
@@ -195,7 +218,8 @@ const UserManagement: React.FC<UserManagementProps> = ({ users, onAddUser, onUpd
               </div>
 
               {/* Se estiver editando o Professor, não permite mudar o cargo dele, ele é sempre Admin */}
-              {editingUser?.id !== '0' && (
+              {/* Se não for admin, não vê as opções de cargo (fica o atual ou o default) */}
+              {editingUser?.id !== '0' && isAdminOrMaster && (
                 <div>
                   <label className="block text-xs font-bold text-gray-500 uppercase mb-1">Função / Cargo</label>
                   <div className="grid grid-cols-3 gap-2">

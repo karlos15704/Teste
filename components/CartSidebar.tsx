@@ -162,30 +162,31 @@ const CartSidebar: React.FC<CartSidebarProps> = ({ cart, onRemoveItem, onUpdateQ
     <>
       {/* CASH CALCULATOR MODAL */}
       {showCashModal && (
-        <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/80 backdrop-blur-sm p-4 animate-in fade-in duration-200">
-           <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full overflow-hidden flex flex-col animate-in zoom-in-95 duration-200 relative">
-              <div className="bg-orange-600 p-4 text-white flex justify-between items-center">
+        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/80 backdrop-blur-sm p-4 animate-in fade-in duration-200">
+           {/* Adicionado max-h e overflow-y para telas pequenas */}
+           <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full max-h-[90vh] overflow-y-auto flex flex-col animate-in zoom-in-95 duration-200 relative">
+              <div className="bg-orange-600 p-4 text-white flex justify-between items-center sticky top-0 z-10">
                  <h3 className="font-bold text-lg flex items-center gap-2">
                    <Calculator size={24} />
-                   Calculadora de Troco
+                   Calculadora
                  </h3>
                  <button onClick={() => { setShowCashModal(false); setSelectedMethod(null); }} className="hover:bg-orange-700 p-1 rounded-full transition-colors">
                    <X size={24} />
                  </button>
               </div>
               
-              <div className="p-6 bg-slate-50">
+              <div className="p-4 md:p-6 bg-slate-50">
                  {/* Display Section */}
-                 <div className="grid grid-cols-2 gap-4 mb-4">
-                    <div className="bg-white p-3 rounded-xl border border-gray-200 shadow-sm">
-                       <p className="text-xs text-gray-500 font-bold uppercase">Total a Pagar</p>
-                       <p className="text-2xl font-black text-gray-800">{formatCurrency(total)}</p>
+                 <div className="grid grid-cols-2 gap-3 md:gap-4 mb-4">
+                    <div className="bg-white p-2 md:p-3 rounded-xl border border-gray-200 shadow-sm">
+                       <p className="text-[10px] md:text-xs text-gray-500 font-bold uppercase">Total</p>
+                       <p className="text-xl md:text-2xl font-black text-gray-800">{formatCurrency(total)}</p>
                     </div>
-                    <div className={`p-3 rounded-xl border shadow-sm ${missingCash > 0 ? 'bg-white border-red-200' : 'bg-green-100 border-green-300'}`}>
-                       <p className={`text-xs font-bold uppercase ${missingCash > 0 ? 'text-gray-500' : 'text-green-700'}`}>
+                    <div className={`p-2 md:p-3 rounded-xl border shadow-sm ${missingCash > 0 ? 'bg-white border-red-200' : 'bg-green-100 border-green-300'}`}>
+                       <p className={`text-[10px] md:text-xs font-bold uppercase ${missingCash > 0 ? 'text-gray-500' : 'text-green-700'}`}>
                          {missingCash > 0 ? 'Falta' : 'Troco'}
                        </p>
-                       <p className={`text-2xl font-black ${missingCash > 0 ? 'text-red-500' : 'text-green-700'}`}>
+                       <p className={`text-xl md:text-2xl font-black ${missingCash > 0 ? 'text-red-500' : 'text-green-700'}`}>
                          {missingCash > 0 ? formatCurrency(missingCash) : formatCurrency(cashChange)}
                        </p>
                     </div>
@@ -193,7 +194,7 @@ const CartSidebar: React.FC<CartSidebarProps> = ({ cart, onRemoveItem, onUpdateQ
 
                  {/* Input Display */}
                  <div className="mb-4 relative">
-                    <label className="text-xs font-bold text-gray-500 uppercase ml-1">Valor Recebido</label>
+                    <label className="text-xs font-bold text-gray-500 uppercase ml-1">Recebido</label>
                     <div className="flex items-center mt-1">
                       <span className="absolute left-4 text-gray-400 font-bold">R$</span>
                       <input 
@@ -208,7 +209,7 @@ const CartSidebar: React.FC<CartSidebarProps> = ({ cart, onRemoveItem, onUpdateQ
                  </div>
 
                  {/* Quick Add Buttons */}
-                 <div className="flex gap-2 mb-4 overflow-x-auto pb-2">
+                 <div className="flex gap-2 mb-4 overflow-x-auto pb-2 scrollbar-hide">
                     {[2, 5, 10, 20, 50, 100].map(val => (
                       <button 
                         key={val}
@@ -221,12 +222,12 @@ const CartSidebar: React.FC<CartSidebarProps> = ({ cart, onRemoveItem, onUpdateQ
                  </div>
 
                  {/* Numeric Keypad */}
-                 <div className="grid grid-cols-3 gap-3 mb-6">
+                 <div className="grid grid-cols-3 gap-2 md:gap-3 mb-6">
                     {['1','2','3','4','5','6','7','8','9','C','0',','].map(key => (
                        <button
                          key={key}
                          onClick={() => handleKeypadPress(key)}
-                         className={`py-4 rounded-xl text-xl font-bold shadow-sm transition-transform active:scale-95 border
+                         className={`py-3 md:py-4 rounded-xl text-xl font-bold shadow-sm transition-transform active:scale-95 border
                            ${key === 'C' 
                              ? 'bg-red-50 text-red-600 border-red-100 hover:bg-red-100' 
                              : 'bg-white text-gray-700 border-gray-200 hover:bg-gray-50 hover:border-gray-300'}`}
@@ -242,7 +243,7 @@ const CartSidebar: React.FC<CartSidebarProps> = ({ cart, onRemoveItem, onUpdateQ
                    className="w-full bg-green-600 hover:bg-green-700 disabled:bg-gray-300 disabled:cursor-not-allowed text-white font-bold py-4 rounded-xl shadow-lg shadow-green-200 transition-all text-lg flex items-center justify-center gap-2 animate-cta-bounce active:scale-95 active:shadow-none"
                  >
                    <CheckCircle2 size={24} />
-                   CONFIRMAR PAGAMENTO
+                   CONFIRMAR
                  </button>
               </div>
            </div>
@@ -251,8 +252,8 @@ const CartSidebar: React.FC<CartSidebarProps> = ({ cart, onRemoveItem, onUpdateQ
 
       {/* PIX MODAL OVERLAY */}
       {showPixModal && (
-        <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/80 backdrop-blur-sm p-4 animate-in fade-in duration-200">
-          <div className="bg-white rounded-2xl shadow-2xl max-w-sm w-full overflow-hidden flex flex-col animate-in zoom-in-95 duration-200 relative">
+        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/80 backdrop-blur-sm p-4 animate-in fade-in duration-200">
+          <div className="bg-white rounded-2xl shadow-2xl max-w-sm w-full max-h-[90vh] overflow-y-auto flex flex-col animate-in zoom-in-95 duration-200 relative">
             
             {/* Close Button Absolute for cleaner look */}
             <button 
@@ -280,7 +281,7 @@ const CartSidebar: React.FC<CartSidebarProps> = ({ cart, onRemoveItem, onUpdateQ
                 <img 
                   src={PIX_QR_IMAGE} 
                   alt="QR Code Pix"
-                  className="w-64 h-64 object-contain mix-blend-multiply" 
+                  className="w-48 h-48 md:w-64 md:h-64 object-contain mix-blend-multiply" 
                 />
               </div>
               
@@ -294,7 +295,7 @@ const CartSidebar: React.FC<CartSidebarProps> = ({ cart, onRemoveItem, onUpdateQ
                 className="w-full bg-teal-600 hover:bg-teal-700 text-white font-bold py-4 rounded-xl flex items-center justify-center gap-2 transition-all shadow-lg shadow-teal-200"
               >
                 <CheckCircle2 size={24} />
-                CONFIRMAR PAGAMENTO
+                CONFIRMAR
               </button>
             </div>
           </div>
@@ -438,7 +439,7 @@ const CartSidebar: React.FC<CartSidebarProps> = ({ cart, onRemoveItem, onUpdateQ
            </div>
 
            {/* Payment Methods */}
-           <div className="grid grid-cols-2 gap-2 pt-2">
+           <div className="grid grid-cols-2 gap-2 pt-2 pb-24 md:pb-0"> {/* Padding bottom extra on mobile */}
               <button 
                 onClick={() => handlePaymentSelect(PaymentMethod.CREDIT)}
                 className="flex flex-col items-center justify-center p-3 rounded-xl border border-gray-200 bg-gray-50 hover:bg-orange-50 hover:border-orange-200 hover:text-orange-600 transition-all active:scale-95"
