@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { MASCOT_URL, APP_NAME } from '../constants';
+import { MASCOT_URL, APP_NAME, SCHOOL_LOGO_URL, SCHOOL_CLASS } from '../constants';
 import { User } from '../types';
 import { UserCircle2, Lock, ArrowRight } from 'lucide-react';
 
@@ -112,9 +112,22 @@ const LoginScreen: React.FC<LoginScreenProps> = ({ availableUsers, onLogin }) =>
           </button>
         </form>
         
-        <div className="mt-10 flex flex-col items-center gap-1 opacity-40">
-           <p className="text-[10px] font-black tracking-[0.2em] text-gray-400">TÔ FRITO! POS ENGINE</p>
-           <p className="text-[10px] text-gray-400 font-bold">VERSÃO 2.0 • 2026</p>
+        {/* RODAPÉ DA ESCOLA (DESIGN COOL) */}
+        <div className="mt-8 pt-6 border-t border-orange-100 w-full flex flex-col items-center gap-3">
+           <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Projeto Feira Cultural</p>
+           
+           <div className="flex items-center gap-3 bg-gray-900 py-2 px-4 rounded-full shadow-lg transform hover:scale-105 transition-transform cursor-default group border border-gray-800">
+              {/* Container do Logo (Para garantir contraste se o logo for branco) */}
+              <div className="relative h-8 w-8 flex items-center justify-center">
+                 <img src={SCHOOL_LOGO_URL} alt="Colégio Progresso Santista" className="w-full h-full object-contain" />
+              </div>
+              
+              <div className="h-4 w-px bg-gray-700"></div>
+              
+              <span className="text-yellow-400 font-black text-sm tracking-tighter group-hover:text-yellow-300 transition-colors">
+                {SCHOOL_CLASS}
+              </span>
+           </div>
         </div>
       </div>
     </div>

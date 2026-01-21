@@ -16,6 +16,12 @@ export const STAFF_USERS: User[] = [
 ];
 
 // =================================================================================
+// 🏫 DADOS DA ESCOLA (FEIRA CULTURAL)
+// =================================================================================
+export const SCHOOL_LOGO_URL = "https://colegioprogressosantista.com.br/wp-content/uploads/2025/11/logo-branca-amarela-1024x1022.webp";
+export const SCHOOL_CLASS = "9ºB";
+
+// =================================================================================
 // 🍗 PRODUTOS (Imagens Corrigidas - Links Diretos)
 // =================================================================================
 export const MOCK_PRODUCTS: Product[] = [

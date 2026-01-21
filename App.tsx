@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { MOCK_PRODUCTS, APP_NAME, MASCOT_URL, STAFF_USERS as DEFAULT_STAFF } from './constants';
+import { MOCK_PRODUCTS, APP_NAME, MASCOT_URL, STAFF_USERS as DEFAULT_STAFF, SCHOOL_LOGO_URL, SCHOOL_CLASS } from './constants';
 import { Product, CartItem, Transaction, PaymentMethod, User } from './types';
 import { generateId, formatCurrency } from './utils';
 import ProductGrid from './components/ProductGrid';
@@ -464,10 +464,12 @@ const App: React.FC = () => {
 
       {/* SIDEBAR NAVIGATION (DESKTOP) */}
       <nav className="hidden md:flex w-20 bg-gray-900 flex-col items-center py-4 gap-6 z-30 shadow-xl border-r border-gray-800 pt-6">
-        <div className="text-orange-500 p-2 bg-gray-800 rounded-full mb-2 border border-orange-600 shadow-lg shadow-orange-900/50 hover:rotate-12 transition-transform duration-500 hover:scale-110">
-          <Flame size={24} fill="currentColor" className="text-orange-500 animate-pulse" />
-        </div>
         
+        {/* ÍCONE DE CHAMA (RESTAURADO) */}
+        <div className="mb-2 p-2 bg-orange-900/30 rounded-full">
+          <Flame className="text-orange-500 animate-pulse" size={24} />
+        </div>
+
         {(isAdminUser || isCashierUser) && (
           <button 
             onClick={() => setCurrentView('pos')}
@@ -501,7 +503,7 @@ const App: React.FC = () => {
           </button>
         )}
 
-        {/* AGORA TODOS PODEM VER O BOTÃO EQUIPE */}
+        {/* BOTÃO EQUIPE */}
         <button 
           onClick={() => setCurrentView('users')}
           className={`p-3 rounded-2xl transition-all duration-300 group relative ${currentView === 'users' ? 'bg-orange-600 text-white shadow-lg shadow-orange-900/50 scale-105' : 'text-gray-400 hover:text-white hover:bg-gray-800 hover:scale-110'}`}
@@ -512,6 +514,14 @@ const App: React.FC = () => {
         </button>
 
         <div className="flex-1"></div>
+
+        {/* LOGO DA ESCOLA NA SIDEBAR (DESIGN LEGAL) */}
+        <div className="flex flex-col items-center gap-1 opacity-80 hover:opacity-100 transition-opacity cursor-help mb-4" title={`Projeto Feira Cultural ${SCHOOL_CLASS} - Colégio Progresso Santista`}>
+           <div className="w-12 h-12 rounded-xl bg-white/10 flex items-center justify-center p-2 border border-white/10 shadow-inner">
+             <img src={SCHOOL_LOGO_URL} alt="Escola" className="w-full h-full object-contain" />
+           </div>
+           <span className="text-[9px] font-black text-gray-500 uppercase tracking-widest">{SCHOOL_CLASS}</span>
+        </div>
 
         <button 
           onClick={() => setShowLogoutModal(true)}
@@ -669,7 +679,7 @@ const App: React.FC = () => {
           <button 
             onClick={() => setCurrentView('users')}
             className={`flex flex-col items-center justify-center w-full h-full gap-1 transition-colors ${currentView === 'users' ? 'text-orange-600 bg-orange-50/50' : 'text-gray-400 hover:text-gray-600'}`}
-          >
+            >
             <UsersIcon size={22} className={currentView === 'users' ? 'fill-current' : ''} />
             <span className="text-[10px] font-bold uppercase">Equipe</span>
           </button>
