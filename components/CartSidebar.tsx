@@ -78,8 +78,8 @@ const CartSidebar: React.FC<CartSidebarProps> = ({ cart, onRemoveItem, onUpdateQ
   };
 
   const handleUnlockDiscount = () => {
-    // SENHA ATUALIZADA PARA O PADRÃO MASTER
-    if (passwordAttempt === '32034392320') {
+    // SENHA ATUALIZADA
+    if (passwordAttempt === '0') {
       setIsDiscountUnlocked(true);
       setShowPasswordInput(false);
       setPasswordAttempt('');

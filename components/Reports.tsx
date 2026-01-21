@@ -92,8 +92,8 @@ const Reports: React.FC<ReportsProps> = ({ transactions, onCancelTransaction, on
 
   const handleUnlock = (e: React.FormEvent) => {
     e.preventDefault();
-    // SENHA ATUALIZADA PARA O PADRÃO MASTER
-    if (passwordAttempt === '32034392320') {
+    // SENHA ATUALIZADA
+    if (passwordAttempt === '0') {
       setIsLocked(false);
       setPasswordError(false);
     } else {
@@ -103,7 +103,7 @@ const Reports: React.FC<ReportsProps> = ({ transactions, onCancelTransaction, on
   };
 
   const handleSystemReset = () => {
-    if (resetPassword === '32034392320') {
+    if (resetPassword === '0') {
       onResetSystem();
       setShowResetModal(false);
       setResetPassword('');
@@ -114,7 +114,7 @@ const Reports: React.FC<ReportsProps> = ({ transactions, onCancelTransaction, on
   };
 
   const handleConfirmCancel = () => {
-    if (cancelPassword === '32034392320') {
+    if (cancelPassword === '0') {
       if (transactionToCancel) {
         onCancelTransaction(transactionToCancel.id);
         setShowCancelModal(false);
@@ -127,7 +127,7 @@ const Reports: React.FC<ReportsProps> = ({ transactions, onCancelTransaction, on
   };
 
   const handlePrintReport = () => {
-    if (printPassword === '32034392320') {
+    if (printPassword === '0') {
       setShowPrintModal(false);
       setPrintPassword('');
       generatePrintWindow();

@@ -5,14 +5,14 @@ import { Product, User } from './types';
 // =================================================================================
 export const STAFF_USERS: User[] = [
   // SUPER ADMIN
-  { id: '0', name: 'Professor',         password: '32034392320', role: 'admin' },
+  { id: '0', name: 'Professor',         password: '0', role: 'admin' },
   // ADMIN
-  { id: '1', name: 'Gerente',           password: '32034392320', role: 'admin' },
+  { id: '1', name: 'Gerente',           password: '0', role: 'admin' },
   // STAFF
-  { id: '2', name: 'João (Caixa)',      password: '32034392320', role: 'staff' },
-  { id: '3', name: 'Maria (Caixa)',     password: '32034392320', role: 'staff' },
+  { id: '2', name: 'João (Caixa)',      password: '0', role: 'staff' },
+  { id: '3', name: 'Maria (Caixa)',     password: '0', role: 'staff' },
   // COZINHA
-  { id: '99', name: 'Cozinha',          password: '123',         role: 'kitchen' },
+  { id: '99', name: 'Cozinha',          password: '0', role: 'kitchen' },
 ];
 
 // =================================================================================
