@@ -664,6 +664,19 @@ const App: React.FC = () => {
              <span className="text-[10px] font-bold">Relatórios</span>
           </button>
         )}
+
+        {isAdminUser && (
+          <button 
+             onClick={() => {
+               setCurrentView('users');
+               setIsMobileCartOpen(false);
+             }}
+             className={`flex flex-col items-center justify-center w-full h-full ${currentView === 'users' ? 'text-orange-600' : 'text-gray-400'}`}
+          >
+             <UsersIcon size={24} className={currentView === 'users' ? 'mb-1' : ''} />
+             <span className="text-[10px] font-bold">Equipe</span>
+          </button>
+        )}
       </div>
     </div>
   );
