@@ -1,6 +1,6 @@
-import React, { useMemo, useState, useEffect } from 'react';
+import React, { useMemo, useState, useEffect, useRef } from 'react';
 import { Transaction } from '../types';
-import { ChefHat, CheckCircle2, Flame, Clock } from 'lucide-react';
+import { ChefHat, CheckCircle2, Flame, Clock, Sparkles } from 'lucide-react';
 import { MASCOT_URL, APP_NAME, SCHOOL_CLASS } from '../constants';
 
 interface PublicDisplayProps {
@@ -9,6 +9,10 @@ interface PublicDisplayProps {
 
 const PublicDisplay: React.FC<PublicDisplayProps> = ({ transactions }) => {
   const [currentTime, setCurrentTime] = useState(new Date());
+  
+  // Estado para controlar a animação de celebração (Pedido Pronto)
+  const [celebratingOrder, setCelebratingOrder] = useState<Transaction | null>(null);
+  const prevTopReadyIdRef = useRef<string | null>(null);
 
   useEffect(() => {
     const timer = setInterval(() => {
@@ -20,24 +24,105 @@ const PublicDisplay: React.FC<PublicDisplayProps> = ({ transactions }) => {
   const startOfDay = new Date();
   startOfDay.setHours(0, 0, 0, 0);
 
-  // Pedidos em Preparo (Kitchen Status: Pending)
+  // Pedidos em Preparo
   const preparingOrders = useMemo(() => {
     return transactions
       .filter(t => t.kitchenStatus === 'pending' && t.status !== 'cancelled' && t.timestamp >= startOfDay.getTime())
-      .sort((a, b) => a.timestamp - b.timestamp); // Mais antigos primeiro
+      .sort((a, b) => a.timestamp - b.timestamp);
   }, [transactions]);
 
-  // Pedidos Prontos (Kitchen Status: Done) - Pegamos os últimos 10 para não lotar a tela
+  // Pedidos Prontos (Últimos 8)
   const readyOrders = useMemo(() => {
     return transactions
       .filter(t => t.kitchenStatus === 'done' && t.status !== 'cancelled' && t.timestamp >= startOfDay.getTime())
-      .sort((a, b) => b.timestamp - a.timestamp) // Mais recentes primeiro (topo da lista)
+      .sort((a, b) => b.timestamp - a.timestamp)
       .slice(0, 8);
   }, [transactions]);
+
+  // EFEITO: Detectar quando um pedido NOVO entra na lista de prontos
+  useEffect(() => {
+    if (readyOrders.length > 0) {
+      const newestOrder = readyOrders[0];
+      
+      // Se o ID do pedido do topo mudou, significa que é um novo pedido pronto
+      if (prevTopReadyIdRef.current !== newestOrder.id) {
+         // Evita disparar na primeira renderização da página (se já tiver pedidos prontos antigos)
+         if (prevTopReadyIdRef.current !== null) {
+            setCelebratingOrder(newestOrder);
+            
+            // Remove a animação após 7 segundos
+            const timer = setTimeout(() => {
+              setCelebratingOrder(null);
+            }, 7000);
+            
+            return () => clearTimeout(timer);
+         }
+         // Atualiza a referência
+         prevTopReadyIdRef.current = newestOrder.id;
+      }
+    }
+  }, [readyOrders]);
 
   return (
     <div className="h-screen w-screen bg-gray-900 flex flex-col overflow-hidden relative">
       
+      {/* === OVERLAY DE CELEBRAÇÃO (PEDIDO PRONTO) === */}
+      {celebratingOrder && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/95 backdrop-blur-sm animate-in zoom-in-50 duration-500">
+           
+           {/* Fundo de Fogo (Reaproveitando classes do index.html) */}
+           <div className="absolute inset-0 opacity-40 overflow-hidden pointer-events-none">
+              <div className="fire-container scale-150 origin-bottom">
+                  <div className="flame-base"></div>
+                  <div className="flame-body"></div>
+                  <div className="flame-core"></div>
+              </div>
+           </div>
+
+           <div className="relative z-10 flex flex-col items-center text-center p-6 animate-in slide-in-from-bottom-10 duration-700">
+              
+              {/* Mascote Pulando */}
+              <div className="relative mb-6">
+                <div className="absolute inset-0 bg-orange-500 blur-3xl opacity-50 animate-pulse"></div>
+                <img 
+                  src={MASCOT_URL} 
+                  className="w-56 h-56 object-contain relative z-10 animate-bounce drop-shadow-[0_0_30px_rgba(255,100,0,0.8)]" 
+                  alt="Mascote Feliz"
+                />
+              </div>
+
+              <h1 className="text-6xl md:text-7xl font-black text-white mb-4 drop-shadow-lg uppercase tracking-tighter">
+                SAIU DO FORNO!
+              </h1>
+
+              {/* Número da Senha Gigante */}
+              <div className="bg-gradient-to-tr from-orange-600 to-red-600 text-white px-12 py-4 rounded-3xl transform -rotate-3 mb-8 shadow-[0_0_50px_rgba(234,88,12,0.8)] border-4 border-yellow-400 animate-cta-bounce">
+                <span className="text-9xl font-black tracking-tighter drop-shadow-md">#{celebratingOrder.orderNumber}</span>
+              </div>
+
+              {/* Frase Engraçada */}
+              <p className="text-3xl text-yellow-300 font-black uppercase tracking-widest animate-pulse mb-8" style={{textShadow: '2px 2px 0px #000'}}>
+                 🔥 TÁ PEGANDO FOGO, BICHO! 🔥
+              </p>
+
+              {/* Agradecimento da Turma */}
+              <div className="bg-white/10 backdrop-blur-md border border-white/20 px-8 py-4 rounded-2xl transform rotate-1">
+                 <p className="text-2xl text-white font-bold">
+                   Retire seu pedido no balcão
+                 </p>
+                 <div className="flex items-center justify-center gap-2 mt-2">
+                    <Sparkles className="text-yellow-400 animate-spin-in" size={24} />
+                    <p className="text-4xl font-black text-orange-400 uppercase tracking-wide" style={{ textShadow: '2px 2px 4px rgba(0,0,0,0.8)' }}>
+                      O {SCHOOL_CLASS} AGRADECE!
+                    </p>
+                    <Sparkles className="text-yellow-400 animate-spin-in" size={24} />
+                 </div>
+              </div>
+
+           </div>
+        </div>
+      )}
+
       {/* Background Decorativo */}
       <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,_var(--tw-gradient-stops))] from-orange-900/20 via-gray-900 to-gray-900 pointer-events-none"></div>
 
