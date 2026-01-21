@@ -157,23 +157,39 @@ const App: React.FC = () => {
     }
   };
 
+  // EFEITO 1: INICIALIZAÇÃO E REALTIME (Sempre ativo)
   useEffect(() => {
     loadData();
 
     const subscription = subscribeToTransactions(() => {
+      // Se estiver na tela de users, evitamos recarregar para não atrapalhar a edição
+      // Mas como isso vem do servidor, pode ser importante.
+      // Vou manter o loadData aqui, mas o refresh agressivo de 1s será controlado abaixo.
       loadData();
     });
 
-    // ATUALIZAÇÃO AUTOMÁTICA A CADA 1 SEGUNDO (1000ms)
+    return () => {
+      if (subscription) subscription.unsubscribe();
+    };
+  }, []);
+
+  // EFEITO 2: ATUALIZAÇÃO AUTOMÁTICA (POLLING) - Controlado pela View
+  useEffect(() => {
+    // PAUSA a atualização se estiver na tela de EQUIPE (users)
+    // Isso evita "pulos" na tela ou perda de foco nos inputs
+    if (currentView === 'users') {
+      return; 
+    }
+
+    // Caso contrário, atualiza a cada 1 segundo (Padrão para Cozinha/PDV)
     const intervalId = setInterval(() => {
       loadData();
     }, 1000); 
 
     return () => {
-      if (subscription) subscription.unsubscribe();
       clearInterval(intervalId);
     };
-  }, []);
+  }, [currentView]); // Dependência: Recria o timer quando muda a tela
 
   // --- ACTIONS ---
 
