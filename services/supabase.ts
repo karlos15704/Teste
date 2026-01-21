@@ -1,15 +1,15 @@
 import { createClient } from '@supabase/supabase-js';
-import { Transaction } from '../types';
+import { Transaction, User } from '../types';
 
 /* 
   ==============================================================================
   🛠️ CONFIGURAÇÃO DO BANCO DE DADOS (SQL)
   ==============================================================================
   
-  Vá no "SQL Editor" do Supabase e rode este código completo para criar a tabela
-  e liberar as permissões de acesso:
+  Vá no "SQL Editor" do Supabase e rode este código completo para criar as tabelas
+  (Vendas e Usuários) e liberar as permissões:
 
-  -- 1. Cria a tabela
+  -- 1. Cria a tabela de Vendas
   create table if not exists transactions (
     id text primary key,
     "orderNumber" text,
@@ -26,11 +26,20 @@ import { Transaction } from '../types';
     "kitchenStatus" text
   );
 
-  -- 2. Libera permissões (Necessário para o App salvar as vendas)
+  -- 2. Cria a tabela de Usuários (NOVO!)
+  create table if not exists users (
+    id text primary key,
+    name text,
+    password text,
+    role text
+  );
+
+  -- 3. Libera permissões (Necessário para o App funcionar)
   alter table transactions enable row level security;
+  alter table users enable row level security;
   
-  create policy "Acesso Total" on transactions
-  for all using (true) with check (true);
+  create policy "Acesso Total Vendas" on transactions for all using (true) with check (true);
+  create policy "Acesso Total Usuarios" on users for all using (true) with check (true);
 
   ==============================================================================
 */
@@ -55,75 +64,83 @@ export const supabase = isConfigured
     })
   : null;
 
-// --- FUNÇÕES DE BANCO DE DADOS ---
+// --- FUNÇÕES DE VENDAS (TRANSACTIONS) ---
 
 export const fetchTransactions = async (): Promise<Transaction[] | null> => {
   if (!supabase) return null;
-  
   try {
-    const { data, error } = await supabase
-      .from('transactions')
-      .select('*')
-      .order('timestamp', { ascending: true });
-
-    if (error) {
-      console.warn('Supabase Error (Fetch):', error.message);
-      return null;
-    }
-    
+    const { data, error } = await supabase.from('transactions').select('*').order('timestamp', { ascending: true });
+    if (error) { console.warn('Supabase Error (Fetch Transactions):', error.message); return null; }
     return data as Transaction[];
-  } catch (err) {
-    console.warn('Network Error (Fetch):', err);
-    return null;
-  }
+  } catch (err) { return null; }
 };
 
 export const createTransaction = async (transaction: Transaction): Promise<boolean> => {
   if (!supabase) return false;
-
   try {
-    const { error } = await supabase
-      .from('transactions')
-      .insert([transaction]);
-
-    if (error) {
-      console.warn('Supabase Error (Create):', error.message);
-      return false;
-    }
-    return true;
-  } catch (err) {
-    console.warn('Network Error (Create):', err);
-    return false;
-  }
+    const { error } = await supabase.from('transactions').insert([transaction]);
+    return !error;
+  } catch (err) { return false; }
 };
 
 export const updateTransactionStatus = async (id: string, status: 'completed' | 'cancelled') => {
   if (!supabase) return;
-  try {
-    await supabase.from('transactions').update({ status }).eq('id', id);
-  } catch (err) {
-    console.error('Erro ao atualizar status:', err);
-  }
+  try { await supabase.from('transactions').update({ status }).eq('id', id); } catch (err) {}
 };
 
 export const updateKitchenStatus = async (id: string, kitchenStatus: 'pending' | 'done') => {
   if (!supabase) return;
-  try {
-    await supabase.from('transactions').update({ kitchenStatus }).eq('id', id);
-  } catch (err) {
-    console.error('Erro ao atualizar cozinha:', err);
-  }
+  try { await supabase.from('transactions').update({ kitchenStatus }).eq('id', id); } catch (err) {}
 };
+
+// --- FUNÇÕES DE USUÁRIOS (USERS) - NOVO! ---
+
+export const fetchUsers = async (): Promise<User[] | null> => {
+  if (!supabase) return null;
+  try {
+    const { data, error } = await supabase.from('users').select('*');
+    if (error) { console.warn('Supabase Error (Fetch Users):', error.message); return null; }
+    return data as User[];
+  } catch (err) { return null; }
+};
+
+export const createUser = async (user: User): Promise<boolean> => {
+  if (!supabase) return false;
+  try {
+    const { error } = await supabase.from('users').insert([user]);
+    return !error;
+  } catch (err) { return false; }
+};
+
+export const updateUser = async (user: User): Promise<boolean> => {
+  if (!supabase) return false;
+  try {
+    // Atualiza baseado no ID
+    const { error } = await supabase.from('users').update({ 
+      name: user.name, 
+      password: user.password, 
+      role: user.role 
+    }).eq('id', user.id);
+    return !error;
+  } catch (err) { return false; }
+};
+
+export const deleteUser = async (userId: string): Promise<boolean> => {
+  if (!supabase) return false;
+  try {
+    const { error } = await supabase.from('users').delete().eq('id', userId);
+    return !error;
+  } catch (err) { return false; }
+};
+
+// --- SUBSCRIPTION (TEMPO REAL) ---
 
 export const subscribeToTransactions = (onUpdate: () => void) => {
   if (!supabase) return;
-
   const channel = supabase
-    .channel('transactions_channel')
-    .on('postgres_changes', { event: '*', schema: 'public', table: 'transactions' }, () => {
-      onUpdate();
-    })
+    .channel('db_changes')
+    .on('postgres_changes', { event: '*', schema: 'public', table: 'transactions' }, () => onUpdate())
+    .on('postgres_changes', { event: '*', schema: 'public', table: 'users' }, () => onUpdate()) // Escuta usuários também
     .subscribe();
-
   return channel;
 };

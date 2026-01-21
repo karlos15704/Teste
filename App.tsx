@@ -8,7 +8,18 @@ import Reports from './components/Reports';
 import KitchenDisplay from './components/KitchenDisplay';
 import LoginScreen from './components/LoginScreen';
 import UserManagement from './components/UserManagement';
-import { supabase, fetchTransactions, createTransaction, updateTransactionStatus, updateKitchenStatus, subscribeToTransactions } from './services/supabase';
+import { 
+  supabase, 
+  fetchTransactions, 
+  createTransaction, 
+  updateTransactionStatus, 
+  updateKitchenStatus, 
+  subscribeToTransactions,
+  fetchUsers, // Importado
+  createUser, // Importado
+  updateUser, // Importado
+  deleteUser  // Importado
+} from './services/supabase';
 import { LayoutGrid, BarChart3, Flame, CheckCircle2, ChefHat, WifiOff, LogOut, UserCircle2, Users as UsersIcon, RefreshCw, UploadCloud } from 'lucide-react';
 
 const App: React.FC = () => {
@@ -50,16 +61,34 @@ const App: React.FC = () => {
       }
     }
 
-    // 1. Load Users
-    const savedUsers = localStorage.getItem('app_users');
-    if (savedUsers) {
-      setUsers(JSON.parse(savedUsers));
-    } else {
+    // --- CARREGAR USUÁRIOS (AGORA DO SUPABASE) ---
+    try {
+      const dbUsers = await fetchUsers();
+      if (dbUsers && dbUsers.length > 0) {
+        setUsers(dbUsers);
+        // Backup local caso fique offline depois
+        localStorage.setItem('app_users', JSON.stringify(dbUsers));
+      } else if (dbUsers && dbUsers.length === 0) {
+        // Se conectou mas o banco está vazio, popula com o padrão
+        console.log("Banco de usuários vazio. Inicializando com padrão...");
+        setUsers(DEFAULT_STAFF);
+        DEFAULT_STAFF.forEach(u => createUser(u)); // Envia para o banco
+      } else {
+        // Fallback offline
+        const savedUsers = localStorage.getItem('app_users');
+        if (savedUsers) {
+          setUsers(JSON.parse(savedUsers));
+        } else {
+          setUsers(DEFAULT_STAFF);
+        }
+      }
+    } catch (e) {
+      console.error("Erro ao carregar usuários:", e);
+      // Fallback
       setUsers(DEFAULT_STAFF);
-      localStorage.setItem('app_users', JSON.stringify(DEFAULT_STAFF));
     }
 
-    // 2. Load Transactions with Auto-Restore Logic
+    // --- CARREGAR VENDAS ---
     if (!supabase) {
       setIsConnected(false);
       setIsLoading(false);
@@ -88,15 +117,11 @@ const App: React.FC = () => {
         const localData: Transaction[] = localDataString ? JSON.parse(localDataString) : [];
 
         // LÓGICA DE RESTAURAÇÃO:
-        // Se o banco está vazio (0 vendas) mas o LocalStorage tem vendas,
-        // significa que o banco foi resetado. Vamos manter as vendas locais e tentar re-enviar.
         if (data.length === 0 && localData.length > 0) {
            console.log("Detectado reset do banco. Preservando dados locais e iniciando restauração...");
            setTransactions(localData);
            setIsSyncing(true);
            
-           // Tenta re-enviar as transações locais para o banco novo
-           // Fazemos isso silenciosamente para não travar a tela
            Promise.all(localData.map(t => createTransaction(t)))
              .then(() => {
                console.log("Restauração completa!");
@@ -108,8 +133,6 @@ const App: React.FC = () => {
              });
 
         } else {
-           // Fluxo normal: O servidor manda.
-           // Se tiver mais dados no servidor, atualiza local.
            setTransactions(data);
            localStorage.setItem('pos_transactions', JSON.stringify(data));
         }
@@ -138,9 +161,7 @@ const App: React.FC = () => {
       loadData();
     });
 
-    // Sincronização periódica menos agressiva
     const intervalId = setInterval(() => {
-      // Só recarrega se não estiver digitando ou interagindo criticamente (simples check)
       loadData();
     }, 5000); 
 
@@ -163,27 +184,46 @@ const App: React.FC = () => {
     }
   };
 
-  const handleAddUser = (newUser: User) => {
+  const handleAddUser = async (newUser: User) => {
+    // 1. Atualiza UI imediatamente
     const updatedUsers = [...users, newUser];
     setUsers(updatedUsers);
     localStorage.setItem('app_users', JSON.stringify(updatedUsers));
+    
+    // 2. Envia para o banco
+    if (isConnected) {
+      await createUser(newUser);
+    }
   };
 
-  const handleUpdateUser = (updatedUser: User) => {
+  const handleUpdateUser = async (updatedUser: User) => {
+    // 1. Atualiza UI imediatamente
     const updatedUsers = users.map(u => u.id === updatedUser.id ? updatedUser : u);
     setUsers(updatedUsers);
     localStorage.setItem('app_users', JSON.stringify(updatedUsers));
     
+    // Atualiza sessão se for o próprio usuário
     if (currentUser?.id === updatedUser.id) {
       setCurrentUser(updatedUser);
       localStorage.setItem('active_user', JSON.stringify(updatedUser));
     }
+
+    // 2. Envia para o banco
+    if (isConnected) {
+      await updateUser(updatedUser);
+    }
   };
 
-  const handleDeleteUser = (userId: string) => {
+  const handleDeleteUser = async (userId: string) => {
+    // 1. Atualiza UI imediatamente
     const updatedUsers = users.filter(u => u.id !== userId);
     setUsers(updatedUsers);
     localStorage.setItem('app_users', JSON.stringify(updatedUsers));
+    
+    // 2. Remove do banco
+    if (isConnected) {
+      await deleteUser(userId);
+    }
   };
 
   const addToCart = (product: Product) => {
@@ -238,7 +278,7 @@ const App: React.FC = () => {
         kitchenStatus: 'pending'
       };
 
-      // 1. ATUALIZAÇÃO IMEDIATA (UI + LocalStorage)
+      // 1. ATUALIZAÇÃO IMEDIATA
       const updatedTransactions = [...transactions, newTransaction];
       setTransactions(updatedTransactions);
       localStorage.setItem('pos_transactions', JSON.stringify(updatedTransactions));
@@ -252,7 +292,7 @@ const App: React.FC = () => {
         const success = await createTransaction(newTransaction);
         if (!success) {
            console.log("Venda salva localmente (falha no envio online)");
-           setIsConnected(false); // Marca como desconectado temporariamente
+           setIsConnected(false); 
         }
       }
     } catch (error) {
