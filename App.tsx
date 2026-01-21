@@ -9,7 +9,7 @@ import KitchenDisplay from './components/KitchenDisplay';
 import LoginScreen from './components/LoginScreen';
 import UserManagement from './components/UserManagement';
 import { supabase, fetchTransactions, createTransaction, updateTransactionStatus, updateKitchenStatus, subscribeToTransactions } from './services/supabase';
-import { LayoutGrid, BarChart3, Flame, CheckCircle2, ChefHat, WifiOff, LogOut, UserCircle2, Users as UsersIcon, AlertTriangle } from 'lucide-react';
+import { LayoutGrid, BarChart3, Flame, CheckCircle2, ChefHat, WifiOff, LogOut, UserCircle2, Users as UsersIcon, RefreshCw } from 'lucide-react';
 
 const App: React.FC = () => {
   // Login & Users State
@@ -36,6 +36,12 @@ const App: React.FC = () => {
 
   // Load Initial Data (Users + Transactions)
   const loadData = async () => {
+    // 0. Check for Active Session (Persistência de Login)
+    const savedSession = localStorage.getItem('active_user');
+    if (savedSession && !currentUser) {
+      setCurrentUser(JSON.parse(savedSession));
+    }
+
     // 1. Load Users from LocalStorage or Default
     const savedUsers = localStorage.getItem('app_users');
     if (savedUsers) {
@@ -80,10 +86,24 @@ const App: React.FC = () => {
       loadData();
     });
 
+    // ATUALIZAÇÃO AUTOMÁTICA A CADA 10 SEGUNDOS
+    // Isso garante que a tela da cozinha (e outras) recebam novos pedidos mesmo se o realtime falhar
+    const intervalId = setInterval(() => {
+      loadData();
+    }, 10000);
+
     return () => {
       if (subscription) subscription.unsubscribe();
+      clearInterval(intervalId);
     };
   }, []);
+
+  // --- LOGIN ACTION (WRAPPER PARA SALVAR SESSÃO) ---
+  const handleLogin = (user: User) => {
+    setCurrentUser(user);
+    // Salva a sessão para não perder ao recarregar
+    localStorage.setItem('active_user', JSON.stringify(user));
+  };
 
   // --- USER MANAGEMENT ACTIONS ---
   const handleAddUser = (newUser: User) => {
@@ -99,7 +119,9 @@ const App: React.FC = () => {
     
     // Se o usuário editado for o atual, atualiza a sessão
     if (currentUser?.id === updatedUser.id) {
-      setCurrentUser(updatedUser);
+      const updatedSession = updatedUser;
+      setCurrentUser(updatedSession);
+      localStorage.setItem('active_user', JSON.stringify(updatedSession));
     }
   };
 
@@ -207,6 +229,12 @@ const App: React.FC = () => {
     setCart([]);
     setCurrentView('pos');
     setShowLogoutModal(false);
+    // Remove sessão salva
+    localStorage.removeItem('active_user');
+  };
+
+  const handleManualReload = () => {
+    window.location.reload();
   };
 
   if (isLoading) {
@@ -220,7 +248,7 @@ const App: React.FC = () => {
 
   // Se não estiver logado, mostra a tela de login (usando a lista dinâmica de usuários)
   if (!currentUser) {
-    return <LoginScreen availableUsers={users} onLogin={setCurrentUser} />;
+    return <LoginScreen availableUsers={users} onLogin={handleLogin} />;
   }
 
   return (
@@ -354,6 +382,16 @@ const App: React.FC = () => {
 
         <div className="flex-1"></div>
 
+        {/* Reload Button */}
+        <button 
+          onClick={handleManualReload}
+          className="p-3 rounded-2xl text-blue-400 hover:bg-blue-500 hover:text-white transition-all duration-300 mb-2 hover:scale-110 active:scale-95 group"
+          title="Recarregar Sistema"
+        >
+          <RefreshCw size={24} className="group-hover:animate-spin" />
+        </button>
+
+        {/* Logout Button */}
         <button 
           onClick={() => setShowLogoutModal(true)}
           className="p-3 rounded-2xl text-red-400 hover:bg-red-500 hover:text-white transition-all duration-300 mb-4 hover:scale-110 active:scale-95"
