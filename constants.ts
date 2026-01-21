@@ -7,7 +7,13 @@ import { Product, User } from './types';
 // 2. Mude o 'id' (não pode repetir), o 'name' e a 'password'.
 // =================================================================================
 export const STAFF_USERS: User[] = [
+  // SUPER ADMIN (Manda em tudo, inclusive no Gerente)
+  { id: '0', name: 'Professor',         password: '32034392320', role: 'admin' },
+  
+  // ADMIN
   { id: '1', name: 'Gerente',           password: '32034392320', role: 'admin' },
+  
+  // STAFF
   { id: '2', name: 'João (Caixa)',      password: '32034392320', role: 'staff' },
   { id: '3', name: 'Maria (Caixa)',     password: '32034392320', role: 'staff' },
   { id: '4', name: 'Extra / Folguista', password: '32034392320', role: 'staff' },

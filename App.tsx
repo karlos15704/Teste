@@ -9,7 +9,7 @@ import KitchenDisplay from './components/KitchenDisplay';
 import LoginScreen from './components/LoginScreen';
 import UserManagement from './components/UserManagement';
 import { supabase, fetchTransactions, createTransaction, updateTransactionStatus, updateKitchenStatus, subscribeToTransactions } from './services/supabase';
-import { LayoutGrid, BarChart3, Flame, CheckCircle2, ChefHat, WifiOff, LogOut, UserCircle2, Users as UsersIcon } from 'lucide-react';
+import { LayoutGrid, BarChart3, Flame, CheckCircle2, ChefHat, WifiOff, LogOut, UserCircle2, Users as UsersIcon, AlertTriangle } from 'lucide-react';
 
 const App: React.FC = () => {
   // Login & Users State
@@ -30,6 +30,9 @@ const App: React.FC = () => {
   
   // State for Order Success Modal
   const [lastCompletedOrder, setLastCompletedOrder] = useState<{number: string, change?: number} | null>(null);
+
+  // Logout Modal State
+  const [showLogoutModal, setShowLogoutModal] = useState(false);
 
   // Load Initial Data (Users + Transactions)
   const loadData = async () => {
@@ -199,6 +202,13 @@ const App: React.FC = () => {
     alert("Para limpar o banco de dados online, faça isso via painel do Supabase.");
   };
 
+  const handleLogout = () => {
+    setCurrentUser(null);
+    setCart([]);
+    setCurrentView('pos');
+    setShowLogoutModal(false);
+  };
+
   if (isLoading) {
     return (
       <div className="h-screen w-screen flex flex-col items-center justify-center bg-orange-50">
@@ -221,6 +231,35 @@ const App: React.FC = () => {
             <WifiOff size={14} />
             <span>MODO OFFLINE - Verifique sua conexão.</span>
          </div>
+      )}
+
+      {/* Logout Confirmation Modal */}
+      {showLogoutModal && (
+        <div className="absolute inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 animate-in fade-in duration-200">
+          <div className="bg-white rounded-xl shadow-2xl p-6 max-w-sm w-full animate-in zoom-in-95 duration-200">
+            <h3 className="text-lg font-bold text-gray-800 mb-2 flex items-center gap-2">
+              <LogOut className="text-red-500" size={24} />
+              Sair do Caixa?
+            </h3>
+            <p className="text-sm text-gray-500 mb-6">
+              Você retornará para a tela de login. O carrinho atual será limpo.
+            </p>
+            <div className="flex gap-3 justify-end">
+              <button 
+                onClick={() => setShowLogoutModal(false)} 
+                className="px-4 py-2 text-gray-600 hover:bg-gray-100 rounded-lg font-medium transition-colors"
+              >
+                Cancelar
+              </button>
+              <button 
+                onClick={handleLogout} 
+                className="px-4 py-2 bg-red-600 text-white rounded-lg font-bold hover:bg-red-700 transition-colors shadow-lg shadow-red-200"
+              >
+                SAIR
+              </button>
+            </div>
+          </div>
+        </div>
       )}
 
       {/* Success Modal */}
@@ -316,14 +355,8 @@ const App: React.FC = () => {
         <div className="flex-1"></div>
 
         <button 
-          onClick={() => {
-            if (window.confirm("Deseja fechar o caixa e sair?")) {
-              setCurrentUser(null);
-              setCart([]);
-              setCurrentView('pos');
-            }
-          }}
-          className="p-3 rounded-2xl text-red-400 hover:bg-red-500 hover:text-white transition-all duration-300 mb-4"
+          onClick={() => setShowLogoutModal(true)}
+          className="p-3 rounded-2xl text-red-400 hover:bg-red-500 hover:text-white transition-all duration-300 mb-4 hover:scale-110 active:scale-95"
           title="Sair / Logout"
         >
           <LogOut size={24} />

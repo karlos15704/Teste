@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { User } from '../types';
 import { generateId } from '../utils';
-import { Plus, Trash2, Edit2, Shield, User as UserIcon, Save, X, Key } from 'lucide-react';
+import { Plus, Trash2, Edit2, Shield, User as UserIcon, Save, X, Key, Crown } from 'lucide-react';
 
 interface UserManagementProps {
   users: User[];
@@ -80,49 +80,69 @@ const UserManagement: React.FC<UserManagementProps> = ({ users, onAddUser, onUpd
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-        {users.map(user => (
-          <div key={user.id} className="bg-white p-5 rounded-2xl shadow-sm border border-orange-100 flex flex-col relative group hover:shadow-md transition-shadow">
-            
-            <div className="flex items-start justify-between mb-4">
-               <div className={`p-3 rounded-full ${user.role === 'admin' ? 'bg-orange-100 text-orange-600' : 'bg-gray-100 text-gray-500'}`}>
-                  {user.role === 'admin' ? <Shield size={24} /> : <UserIcon size={24} />}
-               </div>
-               <div className="flex gap-1">
-                 <button 
-                    onClick={() => openEdit(user)}
-                    className="p-2 text-gray-400 hover:text-blue-500 hover:bg-blue-50 rounded-lg transition-colors"
-                    title="Editar"
-                 >
-                   <Edit2 size={18} />
-                 </button>
-                 {/* Não permitir deletar a si mesmo ou se for o único admin */}
-                 {user.id !== currentUser.id && (
-                   <button 
-                      onClick={() => {
-                        if(window.confirm(`Tem certeza que deseja remover ${user.name}?`)) {
-                          onDeleteUser(user.id);
-                        }
-                      }}
-                      className="p-2 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors"
-                      title="Excluir"
-                   >
-                     <Trash2 size={18} />
-                   </button>
-                 )}
-               </div>
-            </div>
+        {users.map(user => {
+          // Identifica se o card atual é do "Professor"
+          const isProfessor = user.id === '0';
+          // Identifica se o usuário logado é o "Professor"
+          const currentUserIsProfessor = currentUser.id === '0';
 
-            <h3 className="text-lg font-bold text-gray-800">{user.name}</h3>
-            <span className={`text-xs font-bold uppercase tracking-wider mb-4 ${user.role === 'admin' ? 'text-orange-500' : 'text-gray-400'}`}>
-              {user.role === 'admin' ? 'Gerente / Admin' : 'Vendedor / Staff'}
-            </span>
+          return (
+            <div key={user.id} className={`p-5 rounded-2xl shadow-sm border flex flex-col relative group hover:shadow-md transition-shadow ${isProfessor ? 'bg-orange-50 border-orange-200' : 'bg-white border-orange-100'}`}>
+              
+              <div className="flex items-start justify-between mb-4">
+                <div className={`p-3 rounded-full ${user.role === 'admin' ? (isProfessor ? 'bg-orange-600 text-white' : 'bg-orange-100 text-orange-600') : 'bg-gray-100 text-gray-500'}`}>
+                    {isProfessor ? <Crown size={24} /> : user.role === 'admin' ? <Shield size={24} /> : <UserIcon size={24} />}
+                </div>
+                <div className="flex gap-1">
+                  {/* Botão Editar: 
+                      - O Professor pode editar qualquer um.
+                      - Outros admins NÃO podem editar o Professor. 
+                  */}
+                  {(!isProfessor || currentUserIsProfessor) && (
+                    <button 
+                      onClick={() => openEdit(user)}
+                      className="p-2 text-gray-400 hover:text-blue-500 hover:bg-blue-50 rounded-lg transition-colors"
+                      title="Editar"
+                    >
+                      <Edit2 size={18} />
+                    </button>
+                  )}
 
-            <div className="mt-auto pt-4 border-t border-gray-100 flex items-center gap-2 text-gray-400 text-sm">
-               <Key size={14} />
-               <span>Senha: ••••</span>
+                  {/* Botão Excluir:
+                      - Ninguém deleta a si mesmo.
+                      - Ninguém deleta o Professor (ID 0).
+                  */}
+                  {user.id !== currentUser.id && !isProfessor && (
+                    <button 
+                        onClick={() => {
+                          if(window.confirm(`Tem certeza que deseja remover ${user.name}?`)) {
+                            onDeleteUser(user.id);
+                          }
+                        }}
+                        className="p-2 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors"
+                        title="Excluir"
+                    >
+                      <Trash2 size={18} />
+                    </button>
+                  )}
+                </div>
+              </div>
+
+              <h3 className="text-lg font-bold text-gray-800 flex items-center gap-2">
+                {user.name}
+                {isProfessor && <span className="text-xs bg-orange-600 text-white px-2 py-0.5 rounded-full">MASTER</span>}
+              </h3>
+              <span className={`text-xs font-bold uppercase tracking-wider mb-4 ${user.role === 'admin' ? 'text-orange-500' : 'text-gray-400'}`}>
+                {isProfessor ? 'Super Admin' : (user.role === 'admin' ? 'Gerente / Admin' : 'Vendedor / Staff')}
+              </span>
+
+              <div className="mt-auto pt-4 border-t border-gray-100 flex items-center gap-2 text-gray-400 text-sm">
+                <Key size={14} />
+                <span>Senha: ••••</span>
+              </div>
             </div>
-          </div>
-        ))}
+          );
+        })}
       </div>
 
       {/* Modal de Cadastro/Edição */}
@@ -162,27 +182,30 @@ const UserManagement: React.FC<UserManagementProps> = ({ users, onAddUser, onUpd
                 />
               </div>
 
-              <div>
-                <label className="block text-xs font-bold text-gray-500 uppercase mb-1">Nível de Acesso</label>
-                <div className="grid grid-cols-2 gap-3">
-                  <button
-                    type="button"
-                    onClick={() => setRole('staff')}
-                    className={`p-3 rounded-xl border-2 font-bold text-sm flex flex-col items-center gap-2 transition-colors ${role === 'staff' ? 'border-orange-500 bg-orange-50 text-orange-700' : 'border-gray-200 text-gray-400 hover:border-gray-300'}`}
-                  >
-                    <UserIcon size={24} />
-                    Vendedor
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setRole('admin')}
-                    className={`p-3 rounded-xl border-2 font-bold text-sm flex flex-col items-center gap-2 transition-colors ${role === 'admin' ? 'border-orange-500 bg-orange-50 text-orange-700' : 'border-gray-200 text-gray-400 hover:border-gray-300'}`}
-                  >
-                    <Shield size={24} />
-                    Gerente
-                  </button>
+              {/* Se estiver editando o Professor, não permite mudar o cargo dele, ele é sempre Admin */}
+              {editingUser?.id !== '0' && (
+                <div>
+                  <label className="block text-xs font-bold text-gray-500 uppercase mb-1">Nível de Acesso</label>
+                  <div className="grid grid-cols-2 gap-3">
+                    <button
+                      type="button"
+                      onClick={() => setRole('staff')}
+                      className={`p-3 rounded-xl border-2 font-bold text-sm flex flex-col items-center gap-2 transition-colors ${role === 'staff' ? 'border-orange-500 bg-orange-50 text-orange-700' : 'border-gray-200 text-gray-400 hover:border-gray-300'}`}
+                    >
+                      <UserIcon size={24} />
+                      Vendedor
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setRole('admin')}
+                      className={`p-3 rounded-xl border-2 font-bold text-sm flex flex-col items-center gap-2 transition-colors ${role === 'admin' ? 'border-orange-500 bg-orange-50 text-orange-700' : 'border-gray-200 text-gray-400 hover:border-gray-300'}`}
+                    >
+                      <Shield size={24} />
+                      Gerente
+                    </button>
+                  </div>
                 </div>
-              </div>
+              )}
 
               <button 
                 type="submit"
