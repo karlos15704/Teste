@@ -9,7 +9,7 @@ import KitchenDisplay from './components/KitchenDisplay';
 import LoginScreen from './components/LoginScreen';
 import UserManagement from './components/UserManagement';
 import { supabase, fetchTransactions, createTransaction, updateTransactionStatus, updateKitchenStatus, subscribeToTransactions } from './services/supabase';
-import { LayoutGrid, BarChart3, Flame, CheckCircle2, ChefHat, WifiOff, LogOut, UserCircle2, Users as UsersIcon, RefreshCw } from 'lucide-react';
+import { LayoutGrid, BarChart3, Flame, CheckCircle2, ChefHat, WifiOff, LogOut, UserCircle2, Users as UsersIcon, RefreshCw, UploadCloud } from 'lucide-react';
 
 const App: React.FC = () => {
   // Login & Users State
@@ -24,6 +24,7 @@ const App: React.FC = () => {
   // Data State
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [isConnected, setIsConnected] = useState(true);
+  const [isSyncing, setIsSyncing] = useState(false);
   
   const [nextOrderNumber, setNextOrderNumber] = useState<number>(1);
   const [isLoading, setIsLoading] = useState(true);
@@ -42,7 +43,6 @@ const App: React.FC = () => {
       const user = JSON.parse(savedSession);
       setCurrentUser(user);
       
-      // Force Views Logic
       if (user.role === 'kitchen') {
         setCurrentView('kitchen');
       } else if (user.role === 'staff') {
@@ -59,8 +59,7 @@ const App: React.FC = () => {
       localStorage.setItem('app_users', JSON.stringify(DEFAULT_STAFF));
     }
 
-    // 2. Load Transactions (Smart Sync)
-    // Se não tiver supabase ou se fetch retornar null, usa localstorage
+    // 2. Load Transactions with Auto-Restore Logic
     if (!supabase) {
       setIsConnected(false);
       setIsLoading(false);
@@ -73,24 +72,53 @@ const App: React.FC = () => {
       const data = await fetchTransactions();
       
       if (data === null) {
-        // Falha na conexão: Mantém dados locais ou carrega do cache
-        console.log("Modo Offline ativado (API retornou null)");
+        // Falha na conexão: Mantém dados locais
+        console.log("Modo Offline (API retornou null)");
         setIsConnected(false);
         const saved = localStorage.getItem('pos_transactions');
         if (saved) {
-           // Se tivermos dados salvos localmente, usamos eles para garantir que nada suma
-           setTransactions(prev => prev.length > JSON.parse(saved).length ? prev : JSON.parse(saved));
+           const local = JSON.parse(saved);
+           setTransactions(prev => prev.length > local.length ? prev : local);
         }
       } else {
-        // Conexão OK: Atualiza estado e faz backup local
+        // Conexão OK
         setIsConnected(true);
-        setTransactions(data);
-        localStorage.setItem('pos_transactions', JSON.stringify(data));
+        
+        const localDataString = localStorage.getItem('pos_transactions');
+        const localData: Transaction[] = localDataString ? JSON.parse(localDataString) : [];
+
+        // LÓGICA DE RESTAURAÇÃO:
+        // Se o banco está vazio (0 vendas) mas o LocalStorage tem vendas,
+        // significa que o banco foi resetado. Vamos manter as vendas locais e tentar re-enviar.
+        if (data.length === 0 && localData.length > 0) {
+           console.log("Detectado reset do banco. Preservando dados locais e iniciando restauração...");
+           setTransactions(localData);
+           setIsSyncing(true);
+           
+           // Tenta re-enviar as transações locais para o banco novo
+           // Fazemos isso silenciosamente para não travar a tela
+           Promise.all(localData.map(t => createTransaction(t)))
+             .then(() => {
+               console.log("Restauração completa!");
+               setIsSyncing(false);
+             })
+             .catch(err => {
+               console.error("Erro na restauração:", err);
+               setIsSyncing(false);
+             });
+
+        } else {
+           // Fluxo normal: O servidor manda.
+           // Se tiver mais dados no servidor, atualiza local.
+           setTransactions(data);
+           localStorage.setItem('pos_transactions', JSON.stringify(data));
+        }
         
         // Calcular próximo número de pedido
+        const currentData = data.length > 0 ? data : localData;
         const startOfDay = new Date();
         startOfDay.setHours(0, 0, 0, 0);
-        const todaysOrders = data.filter(t => t.timestamp >= startOfDay.getTime());
+        const todaysOrders = currentData.filter(t => t.timestamp >= startOfDay.getTime());
         const maxOrder = todaysOrders.length > 0 
           ? Math.max(...todaysOrders.map(t => parseInt(t.orderNumber) || 0))
           : 0;
@@ -110,9 +138,11 @@ const App: React.FC = () => {
       loadData();
     });
 
+    // Sincronização periódica menos agressiva
     const intervalId = setInterval(() => {
+      // Só recarrega se não estiver digitando ou interagindo criticamente (simples check)
       loadData();
-    }, 5000); // Aumentado para 5s para reduzir carga e evitar flickering
+    }, 5000); 
 
     return () => {
       if (subscription) subscription.unsubscribe();
@@ -209,7 +239,6 @@ const App: React.FC = () => {
       };
 
       // 1. ATUALIZAÇÃO IMEDIATA (UI + LocalStorage)
-      // Isso garante que o pedido apareça e fique salvo mesmo se a rede falhar
       const updatedTransactions = [...transactions, newTransaction];
       setTransactions(updatedTransactions);
       localStorage.setItem('pos_transactions', JSON.stringify(updatedTransactions));
@@ -223,7 +252,7 @@ const App: React.FC = () => {
         const success = await createTransaction(newTransaction);
         if (!success) {
            console.log("Venda salva localmente (falha no envio online)");
-           setIsConnected(false); // Marca como desconectado para evitar overwrites
+           setIsConnected(false); // Marca como desconectado temporariamente
         }
       }
     } catch (error) {
@@ -280,12 +309,10 @@ const App: React.FC = () => {
     );
   }
 
-  // Se não estiver logado
   if (!currentUser) {
     return <LoginScreen availableUsers={users} onLogin={handleLogin} />;
   }
 
-  // --- PERMISSION CHECKS ---
   const isKitchenUser = currentUser.role === 'kitchen';
   const isCashierUser = currentUser.role === 'staff';
   const isAdminUser = currentUser.role === 'admin';
@@ -293,12 +320,21 @@ const App: React.FC = () => {
   return (
     <div className="h-screen w-screen flex overflow-hidden bg-orange-50 relative">
       
-      {!isConnected && (
-         <div className="absolute top-0 left-0 w-full bg-red-600 text-white text-xs py-1 px-4 text-center z-50 flex justify-center items-center gap-2 shadow-md">
-            <WifiOff size={14} />
-            <span>MODO OFFLINE - Operando com dados locais</span>
-         </div>
-      )}
+      {/* STATUS BAR */}
+      <div className="absolute top-0 left-0 w-full z-50 flex justify-center pointer-events-none">
+        {!isConnected && (
+           <div className="bg-red-600 text-white text-xs py-1 px-4 rounded-b-lg shadow-md flex items-center gap-2 pointer-events-auto">
+              <WifiOff size={14} />
+              <span>OFFLINE - Dados Salvos Localmente</span>
+           </div>
+        )}
+        {isConnected && isSyncing && (
+           <div className="bg-blue-600 text-white text-xs py-1 px-4 rounded-b-lg shadow-md flex items-center gap-2 pointer-events-auto animate-pulse">
+              <UploadCloud size={14} />
+              <span>Sincronizando banco de dados...</span>
+           </div>
+        )}
+      </div>
 
       {/* Logout Confirmation Modal */}
       {showLogoutModal && (
@@ -459,7 +495,7 @@ const App: React.FC = () => {
            {isCashierUser && <span className="text-xs bg-green-100 text-green-600 px-2 py-0.5 rounded font-bold">CAIXA</span>}
         </div>
 
-        {/* PDV / POS View - Simplified Condition */}
+        {/* PDV / POS View */}
         {currentView === 'pos' && (
           <>
             <div className="flex-1 flex flex-col min-w-0">
