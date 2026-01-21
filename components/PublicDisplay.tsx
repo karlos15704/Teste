@@ -7,6 +7,9 @@ interface PublicDisplayProps {
   transactions: Transaction[];
 }
 
+// Som de Campainha de Atendimento (Ding suave)
+const BELL_SOUND_URL = "https://cdn.pixabay.com/audio/2022/03/15/audio_c8c8a73467.mp3";
+
 const PublicDisplay: React.FC<PublicDisplayProps> = ({ transactions }) => {
   const [currentTime, setCurrentTime] = useState(new Date());
   
@@ -45,30 +48,45 @@ const PublicDisplay: React.FC<PublicDisplayProps> = ({ transactions }) => {
       .slice(0, 8);
   }, [transactions]);
 
-  // --- FUNÇÃO DE ÁUDIO (Voz do Navegador) ---
+  // --- FUNÇÃO DE ÁUDIO MELHORADA ---
   const playAudio = (orderNumber: string) => {
-    if ('speechSynthesis' in window) {
-      // Cancela falas anteriores
-      window.speechSynthesis.cancel();
-      
-      const text = `ATENÇÃO!!! TÁ FRITOOOO!!! SENHA ${orderNumber}!!! VEM BUSCAR!!!`;
-      
-      const utterance = new SpeechSynthesisUtterance(text);
-      utterance.lang = 'pt-BR';
-      utterance.volume = 1.0; 
-      utterance.rate = 1.2;   
-      utterance.pitch = 1.4;  
-      
-      const voices = window.speechSynthesis.getVoices();
-      const bestVoice = voices.find(v => v.name.includes('Google') && v.lang.includes('pt-BR')) ||
-                        voices.find(v => v.name.includes('Brazil') || v.lang.includes('pt-BR'));
+    // 1. Toca a campainha primeiro (Cria um alerta natural)
+    const audio = new Audio(BELL_SOUND_URL);
+    audio.volume = 0.6;
+    audio.play().catch(e => console.error("Erro ao tocar campainha:", e));
 
-      if (bestVoice) {
-        utterance.voice = bestVoice;
-      }
-      
-      window.speechSynthesis.speak(utterance);
-    }
+    // 2. Aguarda um pouco para falar a senha
+    setTimeout(() => {
+        if ('speechSynthesis' in window) {
+            // Cancela falas anteriores
+            window.speechSynthesis.cancel();
+            
+            // Texto simplificado para soar menos robótico
+            // A pontuação ajuda na entonação
+            const text = `Pedido pronto. Senha ${orderNumber}.`;
+            
+            const utterance = new SpeechSynthesisUtterance(text);
+            utterance.lang = 'pt-BR';
+            utterance.volume = 1.0; 
+            utterance.rate = 0.9;  // Um pouco mais lento para clareza
+            utterance.pitch = 1.0; // Tom natural (evita o agudo robótico)
+            
+            const voices = window.speechSynthesis.getVoices();
+            
+            // Tenta encontrar vozes de melhor qualidade (Google ou Luciana no iOS)
+            const bestVoice = voices.find(v => 
+                (v.name.includes('Google') && v.lang.includes('pt-BR')) || // Android/Chrome PC
+                (v.name.includes('Luciana') && v.lang.includes('pt-BR')) || // iOS
+                v.lang === 'pt-BR'
+            );
+
+            if (bestVoice) {
+                utterance.voice = bestVoice;
+            }
+            
+            window.speechSynthesis.speak(utterance);
+        }
+    }, 800); // Delay de 0.8s para a campainha tocar antes
   };
 
   // Carregar vozes
