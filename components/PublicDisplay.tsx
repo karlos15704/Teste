@@ -80,19 +80,25 @@ const PublicDisplay: React.FC<PublicDisplayProps> = ({ transactions }) => {
 
   // === LÓGICA DE DETECÇÃO DE NOVOS PEDIDOS ===
   useEffect(() => {
-    if (readyOrders.length === 0) return;
-
     // 1. Na primeira carga, marcamos todos como "vistos" para não gritar pedidos antigos ao recarregar a página
     if (isFirstLoadRef.current) {
-        readyOrders.forEach(t => processedOrderIdsRef.current.add(t.id));
+        if (readyOrders.length > 0) {
+            readyOrders.forEach(t => processedOrderIdsRef.current.add(t.id));
+        }
         isFirstLoadRef.current = false;
         return;
     }
 
-    // 2. Detectar NOVOS pedidos que ainda não foram processados
-    // REMOVIDO: Lógica de limpar IDs quando voltam para a cozinha. 
-    // Motivo: Se o pedido volta pra cozinha (erro) e depois fica pronto de novo, não queremos celebrar 2 vezes.
-    
+    // 2. Limpeza: Se um pedido sair da lista de prontos (voltar pra cozinha), removemos do Set.
+    // Isso garante que se ele voltar para Pronto depois, ele seja celebrado novamente.
+    const currentReadyIds = new Set(readyOrders.map(t => t.id));
+    processedOrderIdsRef.current.forEach(id => {
+        if (!currentReadyIds.has(id)) {
+            processedOrderIdsRef.current.delete(id);
+        }
+    });
+
+    // 3. Detectar NOVOS pedidos que ainda não foram processados
     const newItems = readyOrders.filter(t => !processedOrderIdsRef.current.has(t.id));
     
     if (newItems.length > 0) {
