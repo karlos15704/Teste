@@ -21,7 +21,7 @@ const App: React.FC = () => {
   
   const [cart, setCart] = useState<CartItem[]>([]);
   
-  // Data State - Now managed via Supabase
+  // Data State
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [isConnected, setIsConnected] = useState(true);
   
@@ -34,15 +34,15 @@ const App: React.FC = () => {
   // Logout Modal State
   const [showLogoutModal, setShowLogoutModal] = useState(false);
 
-  // Load Initial Data (Users + Transactions)
+  // --- CARREGAMENTO DE DADOS BLINDADO ---
   const loadData = async () => {
-    // 0. Check for Active Session (Persistência de Login)
+    // 0. Check for Active Session
     const savedSession = localStorage.getItem('active_user');
     if (savedSession && !currentUser) {
       const user = JSON.parse(savedSession);
       setCurrentUser(user);
       
-      // LOGIC TO FORCE VIEWS BASED ON ROLE
+      // Force Views Logic
       if (user.role === 'kitchen') {
         setCurrentView('kitchen');
       } else if (user.role === 'staff') {
@@ -50,7 +50,7 @@ const App: React.FC = () => {
       }
     }
 
-    // 1. Load Users from LocalStorage or Default
+    // 1. Load Users
     const savedUsers = localStorage.getItem('app_users');
     if (savedUsers) {
       setUsers(JSON.parse(savedUsers));
@@ -59,7 +59,8 @@ const App: React.FC = () => {
       localStorage.setItem('app_users', JSON.stringify(DEFAULT_STAFF));
     }
 
-    // 2. Load Transactions
+    // 2. Load Transactions (Smart Sync)
+    // Se não tiver supabase ou se fetch retornar null, usa localstorage
     if (!supabase) {
       setIsConnected(false);
       setIsLoading(false);
@@ -70,18 +71,33 @@ const App: React.FC = () => {
 
     try {
       const data = await fetchTransactions();
-      setTransactions(data);
       
-      const startOfDay = new Date();
-      startOfDay.setHours(0, 0, 0, 0);
-      const todaysOrders = data.filter(t => t.timestamp >= startOfDay.getTime());
-      const maxOrder = todaysOrders.length > 0 
-        ? Math.max(...todaysOrders.map(t => parseInt(t.orderNumber) || 0))
-        : 0;
-      setNextOrderNumber(maxOrder + 1);
-
+      if (data === null) {
+        // Falha na conexão: Mantém dados locais ou carrega do cache
+        console.log("Modo Offline ativado (API retornou null)");
+        setIsConnected(false);
+        const saved = localStorage.getItem('pos_transactions');
+        if (saved) {
+           // Se tivermos dados salvos localmente, usamos eles para garantir que nada suma
+           setTransactions(prev => prev.length > JSON.parse(saved).length ? prev : JSON.parse(saved));
+        }
+      } else {
+        // Conexão OK: Atualiza estado e faz backup local
+        setIsConnected(true);
+        setTransactions(data);
+        localStorage.setItem('pos_transactions', JSON.stringify(data));
+        
+        // Calcular próximo número de pedido
+        const startOfDay = new Date();
+        startOfDay.setHours(0, 0, 0, 0);
+        const todaysOrders = data.filter(t => t.timestamp >= startOfDay.getTime());
+        const maxOrder = todaysOrders.length > 0 
+          ? Math.max(...todaysOrders.map(t => parseInt(t.orderNumber) || 0))
+          : 0;
+        setNextOrderNumber(maxOrder + 1);
+      }
     } catch (error) {
-      console.error("Erro ao carregar dados:", error);
+      console.error("Erro fatal no loadData:", error);
     } finally {
       setIsLoading(false);
     }
@@ -94,10 +110,9 @@ const App: React.FC = () => {
       loadData();
     });
 
-    // ATUALIZAÇÃO AUTOMÁTICA A CADA 3 SEGUNDOS
     const intervalId = setInterval(() => {
       loadData();
-    }, 3000);
+    }, 5000); // Aumentado para 5s para reduzir carga e evitar flickering
 
     return () => {
       if (subscription) subscription.unsubscribe();
@@ -105,22 +120,19 @@ const App: React.FC = () => {
     };
   }, []);
 
-  // --- LOGIN ACTION (WRAPPER PARA SALVAR SESSÃO) ---
+  // --- ACTIONS ---
+
   const handleLogin = (user: User) => {
     setCurrentUser(user);
     localStorage.setItem('active_user', JSON.stringify(user));
     
-    // REDIRECIONAMENTO AUTOMÁTICO POR CARGO
     if (user.role === 'kitchen') {
       setCurrentView('kitchen');
-    } else if (user.role === 'staff') {
-      setCurrentView('pos');
     } else {
       setCurrentView('pos');
     }
   };
 
-  // --- USER MANAGEMENT ACTIONS ---
   const handleAddUser = (newUser: User) => {
     const updatedUsers = [...users, newUser];
     setUsers(updatedUsers);
@@ -132,11 +144,9 @@ const App: React.FC = () => {
     setUsers(updatedUsers);
     localStorage.setItem('app_users', JSON.stringify(updatedUsers));
     
-    // Se o usuário editado for o atual, atualiza a sessão
     if (currentUser?.id === updatedUser.id) {
-      const updatedSession = updatedUser;
-      setCurrentUser(updatedSession);
-      localStorage.setItem('active_user', JSON.stringify(updatedSession));
+      setCurrentUser(updatedUser);
+      localStorage.setItem('active_user', JSON.stringify(updatedUser));
     }
   };
 
@@ -145,8 +155,6 @@ const App: React.FC = () => {
     setUsers(updatedUsers);
     localStorage.setItem('app_users', JSON.stringify(updatedUsers));
   };
-
-  // --- CART ACTIONS ---
 
   const addToCart = (product: Product) => {
     setCart(prev => {
@@ -181,7 +189,6 @@ const App: React.FC = () => {
       const subtotal = cart.reduce((acc, item) => acc + (item.price * item.quantity), 0);
       const total = Math.max(0, subtotal - discount);
       
-      // Fallback robusto para número do pedido
       const safeOrderNumber = (nextOrderNumber || 1).toString();
       const id = generateId();
 
@@ -201,22 +208,27 @@ const App: React.FC = () => {
         kitchenStatus: 'pending'
       };
 
-      // 1. Atualização Otimista da UI (Isso acontece instantaneamente)
-      setTransactions(prev => [...prev, newTransaction]);
+      // 1. ATUALIZAÇÃO IMEDIATA (UI + LocalStorage)
+      // Isso garante que o pedido apareça e fique salvo mesmo se a rede falhar
+      const updatedTransactions = [...transactions, newTransaction];
+      setTransactions(updatedTransactions);
+      localStorage.setItem('pos_transactions', JSON.stringify(updatedTransactions));
+      
       setLastCompletedOrder({ number: safeOrderNumber, change });
       clearCart();
       setNextOrderNumber(prev => (prev || 1) + 1);
 
-      // 2. Persistência Assíncrona (Sem bloquear a UI)
+      // 2. SINCRONIZAÇÃO EM SEGUNDO PLANO
       if (isConnected) {
-        await createTransaction(newTransaction);
-      } else {
-        const current = JSON.parse(localStorage.getItem('pos_transactions') || '[]');
-        localStorage.setItem('pos_transactions', JSON.stringify([...current, newTransaction]));
+        const success = await createTransaction(newTransaction);
+        if (!success) {
+           console.log("Venda salva localmente (falha no envio online)");
+           setIsConnected(false); // Marca como desconectado para evitar overwrites
+        }
       }
     } catch (error) {
       console.error("Erro crítico no checkout:", error);
-      alert("Erro ao finalizar venda. Verifique se o carrinho não está vazio.");
+      alert("Erro ao processar venda. Tente novamente.");
     }
   };
 
@@ -244,7 +256,7 @@ const App: React.FC = () => {
     setTransactions([]);
     setNextOrderNumber(1);
     localStorage.removeItem('pos_transactions');
-    alert("Para limpar o banco de dados online, faça isso via painel do Supabase.");
+    alert("Para limpar o banco de dados online, utilize o painel do Supabase.");
   };
 
   const handleLogout = () => {
@@ -263,7 +275,7 @@ const App: React.FC = () => {
     return (
       <div className="h-screen w-screen flex flex-col items-center justify-center bg-orange-50">
         <div className="animate-spin rounded-full h-16 w-16 border-t-4 border-b-4 border-orange-600 mb-4"></div>
-        <p className="text-gray-600 font-bold animate-pulse">Conectando ao sistema...</p>
+        <p className="text-gray-600 font-bold animate-pulse">Iniciando sistema...</p>
       </div>
     );
   }
@@ -282,9 +294,9 @@ const App: React.FC = () => {
     <div className="h-screen w-screen flex overflow-hidden bg-orange-50 relative">
       
       {!isConnected && (
-         <div className="absolute top-0 left-0 w-full bg-red-600 text-white text-xs py-1 px-4 text-center z-50 flex justify-center items-center gap-2">
+         <div className="absolute top-0 left-0 w-full bg-red-600 text-white text-xs py-1 px-4 text-center z-50 flex justify-center items-center gap-2 shadow-md">
             <WifiOff size={14} />
-            <span>MODO OFFLINE - Verifique sua conexão.</span>
+            <span>MODO OFFLINE - Operando com dados locais</span>
          </div>
       )}
 
@@ -327,7 +339,7 @@ const App: React.FC = () => {
               </div>
             </div>
             <h2 className="text-2xl font-bold text-gray-800 mb-2">Pedido Confirmado!</h2>
-            <p className="text-gray-500 mb-6">Entrege a senha abaixo ao cliente.</p>
+            <p className="text-gray-500 mb-6">Entregue a senha abaixo ao cliente.</p>
             
             <div className="bg-orange-100 border-2 border-orange-200 border-dashed rounded-xl p-6 mb-8">
               <span className="text-sm text-orange-600 font-bold uppercase tracking-wider block mb-1">SENHA</span>
