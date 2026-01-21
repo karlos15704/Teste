@@ -20,7 +20,7 @@ import {
   updateUser, // Importado
   deleteUser  // Importado
 } from './services/supabase';
-import { LayoutGrid, BarChart3, Flame, CheckCircle2, ChefHat, WifiOff, LogOut, UserCircle2, Users as UsersIcon, RefreshCw, UploadCloud, ShoppingCart } from 'lucide-react';
+import { LayoutGrid, BarChart3, Flame, CheckCircle2, ChefHat, WifiOff, LogOut, UserCircle2, Users as UsersIcon, UploadCloud, ShoppingCart } from 'lucide-react';
 
 const App: React.FC = () => {
   // Login & Users State
@@ -164,9 +164,10 @@ const App: React.FC = () => {
       loadData();
     });
 
+    // ATUALIZAÇÃO AUTOMÁTICA A CADA 1 SEGUNDO (1000ms)
     const intervalId = setInterval(() => {
       loadData();
-    }, 5000); 
+    }, 1000); 
 
     return () => {
       if (subscription) subscription.unsubscribe();
@@ -340,10 +341,6 @@ const App: React.FC = () => {
     localStorage.removeItem('active_user');
   };
 
-  const handleManualReload = () => {
-    window.location.reload();
-  };
-
   // Helper for mobile cart
   const cartItemCount = cart.reduce((acc, item) => acc + item.quantity, 0);
   const cartTotal = cart.reduce((acc, item) => acc + (item.price * item.quantity), 0);
@@ -500,14 +497,6 @@ const App: React.FC = () => {
         )}
 
         <div className="flex-1"></div>
-
-        <button 
-          onClick={handleManualReload}
-          className="p-3 rounded-2xl text-blue-400 hover:bg-blue-500 hover:text-white transition-all duration-300 mb-2 hover:scale-110 active:scale-95 group"
-          title="Recarregar"
-        >
-          <RefreshCw size={24} className="group-hover:animate-spin" />
-        </button>
 
         <button 
           onClick={() => setShowLogoutModal(true)}
@@ -675,14 +664,6 @@ const App: React.FC = () => {
              <span className="text-[10px] font-bold">Relatórios</span>
           </button>
         )}
-
-        <button 
-           onClick={handleManualReload}
-           className="flex flex-col items-center justify-center w-full h-full text-blue-400"
-        >
-           <RefreshCw size={22} />
-           <span className="text-[10px] font-bold">Atualizar</span>
-        </button>
       </div>
     </div>
   );
