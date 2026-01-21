@@ -379,7 +379,7 @@ const App: React.FC = () => {
   const isAdminUser = currentUser.role === 'admin';
 
   return (
-    <div className="h-screen w-screen flex flex-col md:flex-row overflow-hidden bg-orange-50 relative">
+    <div className="h-screen w-full flex flex-col md:flex-row overflow-hidden bg-orange-50 relative">
       
       {/* STATUS BAR */}
       <div className="absolute top-0 left-0 w-full z-50 flex justify-center pointer-events-none">
