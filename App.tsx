@@ -562,6 +562,7 @@ const App: React.FC = () => {
                   products={MOCK_PRODUCTS} 
                   cart={cart} 
                   onAddToCart={addToCart} 
+                  onRemoveFromCart={removeFromCart}
                 />
               </div>
             </div>
