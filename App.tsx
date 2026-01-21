@@ -86,11 +86,11 @@ const App: React.FC = () => {
       loadData();
     });
 
-    // ATUALIZAÇÃO AUTOMÁTICA A CADA 10 SEGUNDOS
-    // Isso garante que a tela da cozinha (e outras) recebam novos pedidos mesmo se o realtime falhar
+    // ATUALIZAÇÃO AUTOMÁTICA A CADA 3 SEGUNDOS
+    // Isso garante que a tela da cozinha (e outras) recebam novos pedidos quase instantaneamente
     const intervalId = setInterval(() => {
       loadData();
-    }, 10000);
+    }, 3000);
 
     return () => {
       if (subscription) subscription.unsubscribe();
