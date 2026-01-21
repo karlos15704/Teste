@@ -21,7 +21,7 @@ export interface User {
   id: string;
   name: string;
   password: string; // Em um app real, isso seria criptografado
-  role: 'admin' | 'staff' | 'kitchen';
+  role: 'admin' | 'staff' | 'kitchen' | 'display';
 }
 
 export interface Transaction {

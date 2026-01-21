@@ -1,7 +1,7 @@
 import React, { useState, useMemo } from 'react';
 import { User } from '../types';
 import { generateId } from '../utils';
-import { Plus, Trash2, Edit2, Shield, User as UserIcon, Save, X, Key, Crown, ChefHat, Store, Lock } from 'lucide-react';
+import { Plus, Trash2, Edit2, Shield, User as UserIcon, Save, X, Key, Crown, ChefHat, Store, Lock, MonitorPlay } from 'lucide-react';
 
 interface UserManagementProps {
   users: User[];
@@ -19,8 +19,6 @@ const UserManagement: React.FC<UserManagementProps> = ({ users, onAddUser, onUpd
   const isAdminOrMaster = currentUser.role === 'admin' || currentUser.id === '0';
 
   // Filtra quais usuários serão exibidos
-  // Se for Admin/Master: Vê todo mundo
-  // Se for Staff/Cozinha: Vê só a si mesmo
   const displayedUsers = useMemo(() => {
     if (isAdminOrMaster) {
       return users;
@@ -31,7 +29,7 @@ const UserManagement: React.FC<UserManagementProps> = ({ users, onAddUser, onUpd
   // Form State
   const [name, setName] = useState('');
   const [password, setPassword] = useState('');
-  const [role, setRole] = useState<'admin' | 'staff' | 'kitchen'>('staff');
+  const [role, setRole] = useState<'admin' | 'staff' | 'kitchen' | 'display'>('staff');
 
   const resetForm = () => {
     setName('');
@@ -53,7 +51,6 @@ const UserManagement: React.FC<UserManagementProps> = ({ users, onAddUser, onUpd
     e.preventDefault();
     
     if (editingUser) {
-      // Editar
       onUpdateUser({
         ...editingUser,
         name,
@@ -61,7 +58,6 @@ const UserManagement: React.FC<UserManagementProps> = ({ users, onAddUser, onUpd
         role
       });
     } else {
-      // Criar Novo
       const newUser: User = {
         id: generateId(),
         name,
@@ -73,10 +69,6 @@ const UserManagement: React.FC<UserManagementProps> = ({ users, onAddUser, onUpd
     resetForm();
   };
 
-  // Lógica de Permissão de Edição de Nome:
-  // 1. Se estiver criando um NOVO usuário (!editingUser) -> Pode digitar.
-  // 2. Se for o PROFESSOR (currentUser.id === '0') -> Pode editar sempre.
-  // 3. Caso contrário (Gerente editando existente ou Staff editando o próprio) -> Não pode.
   const canEditName = !editingUser || currentUser.id === '0';
 
   return (
@@ -94,7 +86,6 @@ const UserManagement: React.FC<UserManagementProps> = ({ users, onAddUser, onUpd
           </p>
         </div>
         
-        {/* Apenas Admins podem criar novos usuários */}
         {isAdminOrMaster && (
           <button 
             onClick={() => setIsModalOpen(true)}
@@ -108,9 +99,7 @@ const UserManagement: React.FC<UserManagementProps> = ({ users, onAddUser, onUpd
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
         {displayedUsers.map(user => {
-          // Identifica se o card atual é do "Professor"
           const isProfessor = user.id === '0';
-          // Identifica se o usuário logado é o "Professor"
           const currentUserIsProfessor = currentUser.id === '0';
 
           let RoleIcon = UserIcon;
@@ -125,8 +114,11 @@ const UserManagement: React.FC<UserManagementProps> = ({ users, onAddUser, onUpd
             RoleIcon = ChefHat;
             roleColorClass = 'bg-blue-100 text-blue-600';
             roleLabel = 'Cozinha / Expedição';
+          } else if (user.role === 'display') {
+            RoleIcon = MonitorPlay;
+            roleColorClass = 'bg-purple-100 text-purple-600';
+            roleLabel = 'Telão / Display';
           } else {
-            // Staff = Caixa
             RoleIcon = Store;
             roleColorClass = 'bg-green-100 text-green-600';
             roleLabel = 'Caixa';
@@ -140,8 +132,6 @@ const UserManagement: React.FC<UserManagementProps> = ({ users, onAddUser, onUpd
                     <RoleIcon size={24} />
                 </div>
                 <div className="flex gap-1">
-                  {/* Botões de Ação */}
-                  {/* Se for Professor, só o próprio professor edita. Se não for, admin ou o dono do perfil editam */}
                   {(!isProfessor || currentUserIsProfessor) && (
                     <button 
                       onClick={() => openEdit(user)}
@@ -152,7 +142,6 @@ const UserManagement: React.FC<UserManagementProps> = ({ users, onAddUser, onUpd
                     </button>
                   )}
 
-                  {/* Botão de Excluir: Apenas Admins veem, e não podem excluir o próprio perfil nem o Professor */}
                   {isAdminOrMaster && user.id !== currentUser.id && !isProfessor && (
                     <button 
                         onClick={() => {
@@ -173,7 +162,11 @@ const UserManagement: React.FC<UserManagementProps> = ({ users, onAddUser, onUpd
                 {user.name}
                 {isProfessor && <span className="text-xs bg-orange-600 text-white px-2 py-0.5 rounded-full">MASTER</span>}
               </h3>
-              <span className={`text-xs font-bold uppercase tracking-wider mb-4 ${user.role === 'admin' ? 'text-orange-500' : user.role === 'kitchen' ? 'text-blue-500' : 'text-green-600'}`}>
+              <span className={`text-xs font-bold uppercase tracking-wider mb-4 
+                ${user.role === 'admin' ? 'text-orange-500' : 
+                  user.role === 'kitchen' ? 'text-blue-500' : 
+                  user.role === 'display' ? 'text-purple-600' :
+                  'text-green-600'}`}>
                 {roleLabel}
               </span>
 
@@ -186,7 +179,6 @@ const UserManagement: React.FC<UserManagementProps> = ({ users, onAddUser, onUpd
         })}
       </div>
 
-      {/* Modal de Cadastro/Edição */}
       {isModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
           <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md overflow-hidden animate-in zoom-in-95 duration-200">
@@ -214,7 +206,7 @@ const UserManagement: React.FC<UserManagementProps> = ({ users, onAddUser, onUpd
                       ? 'border-gray-200 focus:border-orange-500 bg-white' 
                       : 'border-gray-100 bg-gray-100 text-gray-400 cursor-not-allowed'
                     }`}
-                  placeholder="Ex: João Silva"
+                  placeholder="Ex: Telão"
                   required
                 />
                 {!canEditName && (
@@ -229,17 +221,15 @@ const UserManagement: React.FC<UserManagementProps> = ({ users, onAddUser, onUpd
                   value={password}
                   onChange={e => setPassword(e.target.value)}
                   className="w-full border-2 border-gray-200 rounded-xl p-3 focus:outline-none focus:border-orange-500 font-bold text-gray-700 tracking-widest"
-                  placeholder="Ex: 1234"
+                  placeholder="Ex: 0"
                   required
                 />
               </div>
 
-              {/* Se estiver editando o Professor, não permite mudar o cargo dele, ele é sempre Admin */}
-              {/* Se não for admin, não vê as opções de cargo (fica o atual ou o default) */}
               {editingUser?.id !== '0' && isAdminOrMaster && (
                 <div>
                   <label className="block text-xs font-bold text-gray-500 uppercase mb-1">Função / Cargo</label>
-                  <div className="grid grid-cols-3 gap-2">
+                  <div className="grid grid-cols-2 gap-2">
                     <button
                       type="button"
                       onClick={() => setRole('staff')}
@@ -255,6 +245,14 @@ const UserManagement: React.FC<UserManagementProps> = ({ users, onAddUser, onUpd
                     >
                       <ChefHat size={20} />
                       Cozinha
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setRole('display')}
+                      className={`p-2 rounded-xl border-2 font-bold text-xs flex flex-col items-center gap-2 transition-colors ${role === 'display' ? 'border-purple-500 bg-purple-50 text-purple-700' : 'border-gray-200 text-gray-400 hover:border-gray-300'}`}
+                    >
+                      <MonitorPlay size={20} />
+                      Telão
                     </button>
                     <button
                       type="button"

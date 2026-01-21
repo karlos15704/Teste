@@ -13,6 +13,8 @@ export const STAFF_USERS: User[] = [
   { id: '3', name: 'Maria (Caixa)',     password: '0', role: 'staff' },
   // COZINHA
   { id: '99', name: 'Cozinha',          password: '0', role: 'kitchen' },
+  // DISPLAY PÚBLICO (TELÃO)
+  { id: '100', name: 'Telão (Público)', password: '0', role: 'display' },
 ];
 
 // =================================================================================

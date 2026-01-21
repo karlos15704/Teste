@@ -8,6 +8,7 @@ import Reports from './components/Reports';
 import KitchenDisplay from './components/KitchenDisplay';
 import LoginScreen from './components/LoginScreen';
 import UserManagement from './components/UserManagement';
+import PublicDisplay from './components/PublicDisplay'; // Importação do componente de Display
 import { 
   supabase, 
   fetchTransactions, 
@@ -31,7 +32,7 @@ const App: React.FC = () => {
   const [transitionState, setTransitionState] = useState<'idle' | 'logging-in' | 'logging-out'>('idle');
 
   // View State
-  const [currentView, setCurrentView] = useState<'pos' | 'reports' | 'kitchen' | 'users'>('pos');
+  const [currentView, setCurrentView] = useState<'pos' | 'reports' | 'kitchen' | 'users' | 'display'>('pos');
   
   // Mobile UI States
   const [isMobileCartOpen, setIsMobileCartOpen] = useState(false);
@@ -65,6 +66,8 @@ const App: React.FC = () => {
       
       if (user.role === 'kitchen') {
         setCurrentView('kitchen');
+      } else if (user.role === 'display') {
+        setCurrentView('display');
       } else if (user.role === 'staff') {
         setCurrentView('pos');
       }
@@ -218,6 +221,8 @@ const App: React.FC = () => {
       
       if (user.role === 'kitchen') {
         setCurrentView('kitchen');
+      } else if (user.role === 'display') {
+        setCurrentView('display');
       } else {
         setCurrentView('pos');
       }
@@ -409,18 +414,61 @@ const App: React.FC = () => {
     );
   }
 
+  // --- RENDERIZAÇÃO DO DISPLAY PÚBLICO (MODO QUIOSQUE/TV) ---
+  if (currentUser?.role === 'display') {
+    return (
+      <div className="relative">
+         {/* Botão de Logout Discreto (canto inferior direito) */}
+         <button 
+           onClick={() => setShowLogoutModal(true)}
+           className="fixed bottom-4 right-4 z-50 p-2 text-white/10 hover:text-white/50 transition-colors"
+         >
+           <LogOut size={24} />
+         </button>
+
+         <PublicDisplay transactions={transactions} />
+
+         {/* Logout Confirmation Modal (Caso queira sair do modo TV) */}
+         {showLogoutModal && (
+            <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/80 backdrop-blur-sm p-4">
+              <div className="bg-gray-900 border border-white/10 rounded-xl shadow-2xl p-6 max-w-sm w-full">
+                <h3 className="text-lg font-bold text-white mb-2 flex items-center gap-2">
+                  <LogOut className="text-red-500" size={24} />
+                  Sair do Modo Telão?
+                </h3>
+                <p className="text-sm text-gray-400 mb-6">
+                  Isso retornará para a tela de login.
+                </p>
+                <div className="flex gap-3 justify-end">
+                  <button 
+                    onClick={() => setShowLogoutModal(false)} 
+                    className="px-4 py-2 text-gray-400 hover:bg-gray-800 rounded-lg font-medium transition-colors"
+                  >
+                    Cancelar
+                  </button>
+                  <button 
+                    onClick={handleLogout} 
+                    className="px-4 py-2 bg-red-600 text-white rounded-lg font-bold hover:bg-red-700 transition-colors"
+                  >
+                    SAIR
+                  </button>
+                </div>
+              </div>
+            </div>
+         )}
+      </div>
+    );
+  }
+
+  // --- RENDERIZAÇÃO PADRÃO (SISTEMA COM SIDEBAR) ---
   return (
     <div className={`h-screen w-full flex flex-col md:flex-row overflow-hidden bg-orange-50 relative ${transitionState === 'logging-out' ? 'animate-shake-screen' : ''}`}>
       
       {/* --- TRANSITION OVERLAY (FIRE CURTAIN) --- */}
-      {/* Renderiza apenas se estiver transicionando */}
       {(transitionState === 'logging-out' || transitionState === 'logging-in') && (
         <div className={`fire-curtain ${transitionState === 'logging-out' ? 'animate-curtain-rise' : 'animate-curtain-split'}`}>
-           {/* Wall of Fire */}
            <div className="absolute inset-0 bg-gradient-to-t from-red-600 via-orange-500 to-yellow-300"></div>
            <div className="absolute inset-0 bg-[url('https://media.giphy.com/media/3o72FfM5HJydzafgUE/giphy.gif')] opacity-20 mix-blend-overlay bg-cover"></div>
-           
-           {/* Funny Text in the Middle of Fire */}
            <div className="absolute inset-0 flex items-center justify-center z-50">
              {transitionState === 'logging-out' ? (
                 <div className="text-center animate-spin-in">
@@ -436,8 +484,6 @@ const App: React.FC = () => {
                 </div>
              )}
            </div>
-
-           {/* Realistic flame particles at top */}
            <div className="w-full h-32 bg-gradient-to-t from-transparent to-transparent absolute top-0"></div>
         </div>
       )}
