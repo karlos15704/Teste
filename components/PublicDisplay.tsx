@@ -42,19 +42,40 @@ const PublicDisplay: React.FC<PublicDisplayProps> = ({ transactions }) => {
   // --- FUNÇÃO DE ÁUDIO (Voz do Navegador) ---
   const playAudio = (orderNumber: string) => {
     if ('speechSynthesis' in window) {
-      // Cancela falas anteriores para não encavalar
+      // Cancela falas anteriores
       window.speechSynthesis.cancel();
       
-      const text = `Tá Fritoooo! Vem buscar a senha ${orderNumber}!`;
+      // Texto com exclamações e caixa alta ajuda na entonação de alguns navegadores
+      const text = `ATENÇÃO!!! TÁ FRITOOOO!!! SENHA ${orderNumber}!!! VEM BUSCAR!!!`;
+      
       const utterance = new SpeechSynthesisUtterance(text);
-      utterance.lang = 'pt-BR'; // Português Brasil
-      utterance.rate = 1.1;     // Um pouco mais rápido para dar energia
-      utterance.pitch = 1.1;    // Tom um pouco mais agudo/alegre
-      utterance.volume = 1.0;   // Volume máximo
+      utterance.lang = 'pt-BR';
+      utterance.volume = 1.0; // Máximo permitido pelo navegador
+      utterance.rate = 1.2;   // Mais rápido = mais energia/urgência
+      utterance.pitch = 1.4;  // Mais agudo = simula euforia/grito
+      
+      // Tenta pegar uma voz específica do Google ou Microsoft que costumam ser melhores
+      // As vozes carregam assincronamente, então tentamos pegar as disponíveis agora
+      const voices = window.speechSynthesis.getVoices();
+      
+      // Prioridade: Voz do Google PT-BR (geralmente mais natural/alta) -> Microsoft -> Qualquer PT-BR
+      const bestVoice = voices.find(v => v.name.includes('Google') && v.lang.includes('pt-BR')) ||
+                        voices.find(v => v.name.includes('Brazil') || v.lang.includes('pt-BR'));
+
+      if (bestVoice) {
+        utterance.voice = bestVoice;
+      }
       
       window.speechSynthesis.speak(utterance);
     }
   };
+
+  // Carregar as vozes assim que o componente montar (para garantir que estarão prontas)
+  useEffect(() => {
+    if ('speechSynthesis' in window) {
+        window.speechSynthesis.getVoices();
+    }
+  }, []);
 
   // EFEITO 1: Detectar quando um pedido NOVO entra na lista de prontos
   useEffect(() => {
