@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { User } from '../types';
 import { generateId } from '../utils';
-import { Plus, Trash2, Edit2, Shield, User as UserIcon, Save, X, Key, Crown } from 'lucide-react';
+import { Plus, Trash2, Edit2, Shield, User as UserIcon, Save, X, Key, Crown, ChefHat } from 'lucide-react';
 
 interface UserManagementProps {
   users: User[];
@@ -18,7 +18,7 @@ const UserManagement: React.FC<UserManagementProps> = ({ users, onAddUser, onUpd
   // Form State
   const [name, setName] = useState('');
   const [password, setPassword] = useState('');
-  const [role, setRole] = useState<'admin' | 'staff'>('staff');
+  const [role, setRole] = useState<'admin' | 'staff' | 'kitchen'>('staff');
 
   const resetForm = () => {
     setName('');
@@ -86,12 +86,26 @@ const UserManagement: React.FC<UserManagementProps> = ({ users, onAddUser, onUpd
           // Identifica se o usuário logado é o "Professor"
           const currentUserIsProfessor = currentUser.id === '0';
 
+          let RoleIcon = UserIcon;
+          let roleColorClass = 'bg-gray-100 text-gray-500';
+          let roleLabel = 'Vendedor / Staff';
+
+          if (user.role === 'admin') {
+            RoleIcon = isProfessor ? Crown : Shield;
+            roleColorClass = isProfessor ? 'bg-orange-600 text-white' : 'bg-orange-100 text-orange-600';
+            roleLabel = isProfessor ? 'Super Admin' : 'Gerente / Admin';
+          } else if (user.role === 'kitchen') {
+            RoleIcon = ChefHat;
+            roleColorClass = 'bg-blue-100 text-blue-600';
+            roleLabel = 'Cozinha / Expedição';
+          }
+
           return (
             <div key={user.id} className={`p-5 rounded-2xl shadow-sm border flex flex-col relative group hover:shadow-md transition-shadow ${isProfessor ? 'bg-orange-50 border-orange-200' : 'bg-white border-orange-100'}`}>
               
               <div className="flex items-start justify-between mb-4">
-                <div className={`p-3 rounded-full ${user.role === 'admin' ? (isProfessor ? 'bg-orange-600 text-white' : 'bg-orange-100 text-orange-600') : 'bg-gray-100 text-gray-500'}`}>
-                    {isProfessor ? <Crown size={24} /> : user.role === 'admin' ? <Shield size={24} /> : <UserIcon size={24} />}
+                <div className={`p-3 rounded-full ${roleColorClass}`}>
+                    <RoleIcon size={24} />
                 </div>
                 <div className="flex gap-1">
                   {/* Botão Editar: 
@@ -132,8 +146,8 @@ const UserManagement: React.FC<UserManagementProps> = ({ users, onAddUser, onUpd
                 {user.name}
                 {isProfessor && <span className="text-xs bg-orange-600 text-white px-2 py-0.5 rounded-full">MASTER</span>}
               </h3>
-              <span className={`text-xs font-bold uppercase tracking-wider mb-4 ${user.role === 'admin' ? 'text-orange-500' : 'text-gray-400'}`}>
-                {isProfessor ? 'Super Admin' : (user.role === 'admin' ? 'Gerente / Admin' : 'Vendedor / Staff')}
+              <span className={`text-xs font-bold uppercase tracking-wider mb-4 ${user.role === 'admin' ? 'text-orange-500' : user.role === 'kitchen' ? 'text-blue-500' : 'text-gray-400'}`}>
+                {roleLabel}
               </span>
 
               <div className="mt-auto pt-4 border-t border-gray-100 flex items-center gap-2 text-gray-400 text-sm">
@@ -186,21 +200,29 @@ const UserManagement: React.FC<UserManagementProps> = ({ users, onAddUser, onUpd
               {editingUser?.id !== '0' && (
                 <div>
                   <label className="block text-xs font-bold text-gray-500 uppercase mb-1">Nível de Acesso</label>
-                  <div className="grid grid-cols-2 gap-3">
+                  <div className="grid grid-cols-3 gap-2">
                     <button
                       type="button"
                       onClick={() => setRole('staff')}
-                      className={`p-3 rounded-xl border-2 font-bold text-sm flex flex-col items-center gap-2 transition-colors ${role === 'staff' ? 'border-orange-500 bg-orange-50 text-orange-700' : 'border-gray-200 text-gray-400 hover:border-gray-300'}`}
+                      className={`p-2 rounded-xl border-2 font-bold text-xs flex flex-col items-center gap-2 transition-colors ${role === 'staff' ? 'border-orange-500 bg-orange-50 text-orange-700' : 'border-gray-200 text-gray-400 hover:border-gray-300'}`}
                     >
-                      <UserIcon size={24} />
+                      <UserIcon size={20} />
                       Vendedor
                     </button>
                     <button
                       type="button"
-                      onClick={() => setRole('admin')}
-                      className={`p-3 rounded-xl border-2 font-bold text-sm flex flex-col items-center gap-2 transition-colors ${role === 'admin' ? 'border-orange-500 bg-orange-50 text-orange-700' : 'border-gray-200 text-gray-400 hover:border-gray-300'}`}
+                      onClick={() => setRole('kitchen')}
+                      className={`p-2 rounded-xl border-2 font-bold text-xs flex flex-col items-center gap-2 transition-colors ${role === 'kitchen' ? 'border-blue-500 bg-blue-50 text-blue-700' : 'border-gray-200 text-gray-400 hover:border-gray-300'}`}
                     >
-                      <Shield size={24} />
+                      <ChefHat size={20} />
+                      Cozinha
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setRole('admin')}
+                      className={`p-2 rounded-xl border-2 font-bold text-xs flex flex-col items-center gap-2 transition-colors ${role === 'admin' ? 'border-orange-500 bg-orange-50 text-orange-700' : 'border-gray-200 text-gray-400 hover:border-gray-300'}`}
+                    >
+                      <Shield size={20} />
                       Gerente
                     </button>
                   </div>

@@ -39,7 +39,12 @@ const App: React.FC = () => {
     // 0. Check for Active Session (Persistência de Login)
     const savedSession = localStorage.getItem('active_user');
     if (savedSession && !currentUser) {
-      setCurrentUser(JSON.parse(savedSession));
+      const user = JSON.parse(savedSession);
+      setCurrentUser(user);
+      // Se for cozinha, força a view
+      if (user.role === 'kitchen') {
+        setCurrentView('kitchen');
+      }
     }
 
     // 1. Load Users from LocalStorage or Default
@@ -103,6 +108,13 @@ const App: React.FC = () => {
     setCurrentUser(user);
     // Salva a sessão para não perder ao recarregar
     localStorage.setItem('active_user', JSON.stringify(user));
+    
+    // Se for da cozinha, redireciona automaticamente
+    if (user.role === 'kitchen') {
+      setCurrentView('kitchen');
+    } else {
+      setCurrentView('pos');
+    }
   };
 
   // --- USER MANAGEMENT ACTIONS ---
@@ -251,6 +263,9 @@ const App: React.FC = () => {
     return <LoginScreen availableUsers={users} onLogin={handleLogin} />;
   }
 
+  // Determina se o usuário é da cozinha para bloquear interface
+  const isKitchenUser = currentUser.role === 'kitchen';
+
   return (
     <div className="h-screen w-screen flex overflow-hidden bg-orange-50 relative">
       
@@ -267,10 +282,10 @@ const App: React.FC = () => {
           <div className="bg-white rounded-xl shadow-2xl p-6 max-w-sm w-full animate-in zoom-in-95 duration-200">
             <h3 className="text-lg font-bold text-gray-800 mb-2 flex items-center gap-2">
               <LogOut className="text-red-500" size={24} />
-              Sair do Caixa?
+              Sair do Sistema?
             </h3>
             <p className="text-sm text-gray-500 mb-6">
-              Você retornará para a tela de login. O carrinho atual será limpo.
+              Você retornará para a tela de login.
             </p>
             <div className="flex gap-3 justify-end">
               <button 
@@ -291,7 +306,7 @@ const App: React.FC = () => {
       )}
 
       {/* Success Modal */}
-      {lastCompletedOrder && (
+      {lastCompletedOrder && !isKitchenUser && (
         <div className="absolute inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 animate-in fade-in duration-200">
           <div className="bg-white rounded-3xl shadow-2xl p-8 max-w-sm w-full text-center transform scale-100 animate-in zoom-in-95 duration-200">
             <div className="mb-6 flex justify-center">
@@ -332,17 +347,21 @@ const App: React.FC = () => {
           <Flame size={24} fill="currentColor" className="text-orange-500 animate-pulse" />
         </div>
         
-        <button 
-          onClick={() => setCurrentView('pos')}
-          className={`p-3 rounded-2xl transition-all duration-300 group relative ${currentView === 'pos' ? 'bg-orange-600 text-white shadow-lg shadow-orange-900/50 scale-105' : 'text-gray-400 hover:text-white hover:bg-gray-800 hover:scale-110'}`}
-          title="Caixa / Pedidos"
-        >
-          <LayoutGrid size={24} className={`transition-transform duration-300 ${currentView === 'pos' ? '' : 'group-hover:rotate-3'}`} />
-          {currentView === 'pos' && (
-            <span className="absolute -right-1 -top-1 w-3 h-3 bg-white border-2 border-gray-900 rounded-full animate-bounce" />
-          )}
-        </button>
+        {/* BOTÃO CAIXA (Escondido se for Cozinha) */}
+        {!isKitchenUser && (
+          <button 
+            onClick={() => setCurrentView('pos')}
+            className={`p-3 rounded-2xl transition-all duration-300 group relative ${currentView === 'pos' ? 'bg-orange-600 text-white shadow-lg shadow-orange-900/50 scale-105' : 'text-gray-400 hover:text-white hover:bg-gray-800 hover:scale-110'}`}
+            title="Caixa / Pedidos"
+          >
+            <LayoutGrid size={24} className={`transition-transform duration-300 ${currentView === 'pos' ? '' : 'group-hover:rotate-3'}`} />
+            {currentView === 'pos' && (
+              <span className="absolute -right-1 -top-1 w-3 h-3 bg-white border-2 border-gray-900 rounded-full animate-bounce" />
+            )}
+          </button>
+        )}
 
+        {/* BOTÃO COZINHA (Sempre visível ou único visível) */}
         <button 
           onClick={() => setCurrentView('kitchen')}
           className={`p-3 rounded-2xl transition-all duration-300 group relative ${currentView === 'kitchen' ? 'bg-orange-600 text-white shadow-lg shadow-orange-900/50 scale-105' : 'text-gray-400 hover:text-white hover:bg-gray-800 hover:scale-110'}`}
@@ -355,19 +374,22 @@ const App: React.FC = () => {
           )}
         </button>
 
-        <button 
-          onClick={() => setCurrentView('reports')}
-          className={`p-3 rounded-2xl transition-all duration-300 group relative ${currentView === 'reports' ? 'bg-orange-600 text-white shadow-lg shadow-orange-900/50 scale-105' : 'text-gray-400 hover:text-white hover:bg-gray-800 hover:scale-110'}`}
-          title="Relatórios de Vendas"
-        >
-          <BarChart3 size={24} className={`transition-transform duration-300 ${currentView === 'reports' ? '' : 'group-hover:-rotate-3'}`} />
-          {currentView === 'reports' && (
-            <span className="absolute -right-1 -top-1 w-3 h-3 bg-white border-2 border-gray-900 rounded-full animate-bounce" />
-          )}
-        </button>
+        {/* BOTÃO RELATÓRIOS (Escondido se for Cozinha) */}
+        {!isKitchenUser && (
+          <button 
+            onClick={() => setCurrentView('reports')}
+            className={`p-3 rounded-2xl transition-all duration-300 group relative ${currentView === 'reports' ? 'bg-orange-600 text-white shadow-lg shadow-orange-900/50 scale-105' : 'text-gray-400 hover:text-white hover:bg-gray-800 hover:scale-110'}`}
+            title="Relatórios de Vendas"
+          >
+            <BarChart3 size={24} className={`transition-transform duration-300 ${currentView === 'reports' ? '' : 'group-hover:-rotate-3'}`} />
+            {currentView === 'reports' && (
+              <span className="absolute -right-1 -top-1 w-3 h-3 bg-white border-2 border-gray-900 rounded-full animate-bounce" />
+            )}
+          </button>
+        )}
 
         {/* ADMIN ONLY: Users Management */}
-        {currentUser.role === 'admin' && (
+        {!isKitchenUser && currentUser.role === 'admin' && (
           <button 
             onClick={() => setCurrentView('users')}
             className={`p-3 rounded-2xl transition-all duration-300 group relative ${currentView === 'users' ? 'bg-orange-600 text-white shadow-lg shadow-orange-900/50 scale-105' : 'text-gray-400 hover:text-white hover:bg-gray-800 hover:scale-110'}`}
@@ -407,9 +429,10 @@ const App: React.FC = () => {
         <div className="absolute top-4 right-6 z-40 bg-white/90 backdrop-blur border border-orange-200 px-4 py-1.5 rounded-full shadow-sm flex items-center gap-2">
            <UserCircle2 size={16} className="text-orange-600"/>
            <span className="text-xs font-bold text-gray-700 uppercase">{currentUser.name}</span>
+           {isKitchenUser && <span className="text-xs bg-blue-100 text-blue-600 px-2 py-0.5 rounded font-bold">COZINHA</span>}
         </div>
 
-        {currentView === 'pos' && (
+        {(currentView === 'pos' && !isKitchenUser) && (
           <>
             <div className="flex-1 flex flex-col min-w-0">
               <header className="px-6 py-4 bg-white border-b border-orange-100 shadow-sm z-10 relative flex items-center justify-center min-h-[90px]">
@@ -452,7 +475,7 @@ const App: React.FC = () => {
           </div>
         )}
 
-        {currentView === 'reports' && (
+        {(currentView === 'reports' && !isKitchenUser) && (
           <div className="w-full h-full bg-orange-50/50">
             <Reports 
               key={transactions.length}
@@ -464,7 +487,7 @@ const App: React.FC = () => {
         )}
 
         {/* View de Gerenciamento de Usuários */}
-        {currentView === 'users' && currentUser.role === 'admin' && (
+        {currentView === 'users' && currentUser.role === 'admin' && !isKitchenUser && (
           <div className="w-full h-full bg-orange-50/50">
             <UserManagement 
               users={users}

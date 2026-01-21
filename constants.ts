@@ -16,10 +16,11 @@ export const STAFF_USERS: User[] = [
   // STAFF
   { id: '2', name: 'João (Caixa)',      password: '32034392320', role: 'staff' },
   { id: '3', name: 'Maria (Caixa)',     password: '32034392320', role: 'staff' },
-  { id: '4', name: 'Extra / Folguista', password: '32034392320', role: 'staff' },
   
-  // Exemplo de como adicionar um novo (apague as barras // para ativar):
-  // { id: '5', name: 'Pedro', password: '333', role: 'staff' },
+  // COZINHA (Acesso restrito apenas à tela da cozinha)
+  { id: '99', name: 'Cozinha',          password: '123',         role: 'kitchen' },
+  
+  // { id: '4', name: 'Extra / Folguista', password: '32034392320', role: 'staff' },
 ];
 
 // Mock Products - Iscas de Frango Theme
