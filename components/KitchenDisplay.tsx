@@ -142,7 +142,7 @@ const KitchenDisplay: React.FC<KitchenDisplayProps> = ({ transactions, onUpdateS
                }
 
                return (
-                 <div key={order.id} className={`bg-white rounded-xl shadow-sm border-l-4 border-y border-r flex flex-col h-full overflow-hidden animate-in fade-in slide-in-from-bottom-4 duration-300 relative ${borderColor}`}>
+                 <div key={order.id} className={`bg-white rounded-xl shadow-sm border-l-4 border-y border-r flex flex-col h-full overflow-hidden relative ${borderColor}`}>
                     
                     {isCancelled && (
                       <div className="absolute top-0 right-0 p-2 opacity-10">
