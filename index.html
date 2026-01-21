@@ -9,9 +9,8 @@
     <style>
       body {
         font-family: 'Inter', sans-serif;
-        background-color: #fff7ed; /* Orange-50 background tint */
+        background-color: #fff7ed;
       }
-      /* Custom scrollbar for better aesthetics */
       ::-webkit-scrollbar {
         width: 8px;
         height: 8px;
@@ -20,97 +19,130 @@
         background: #f1f1f1; 
       }
       ::-webkit-scrollbar-thumb {
-        background: #fdba74; /* Orange-300 */
+        background: #fdba74;
         border-radius: 4px;
       }
       ::-webkit-scrollbar-thumb:hover {
-        background: #f97316; /* Orange-500 */
+        background: #f97316;
       }
       
-      /* Fire Animation Keyframes - Refined for "Burning" effect */
-      @keyframes burn-text {
+      /* --- TEXT FIRE EFFECT (GLOWING EMBERS) --- */
+      @keyframes ember-text {
         0%, 100% {
-          text-shadow: 
-            2px -2px 4px rgba(250, 204, 21, 0.5),
-            0 -4px 10px rgba(249, 115, 22, 0.8),
-            0 -8px 20px rgba(220, 38, 38, 0.6);
-          transform: skewX(-6deg) translateY(0);
-        }
-        25% {
-          transform: skewX(-5deg) translateY(-1px) scale(1.01);
-          text-shadow: 
-            1px -3px 5px rgba(250, 204, 21, 0.6),
-            0 -6px 12px rgba(249, 115, 22, 0.9),
-            0 -10px 25px rgba(220, 38, 38, 0.7);
+          color: #d97706; /* Amber-600 */
+          text-shadow: 0 0 2px rgba(251, 191, 36, 0.5);
         }
         50% {
-          text-shadow: 
-            3px -1px 3px rgba(250, 204, 21, 0.4),
-            0 -5px 15px rgba(234, 88, 12, 0.8),
-            0 -12px 30px rgba(185, 28, 28, 0.8);
-          transform: skewX(-7deg) translateY(0) scale(0.99);
-        }
-        75% {
-          transform: skewX(-5.5deg) translateY(-2px) scale(1.005);
+          color: #b45309; /* Amber-700 */
+          text-shadow: 0 0 10px rgba(245, 158, 11, 0.8), 0 0 20px rgba(220, 38, 38, 0.4);
         }
       }
 
-      /* Fire Text Effect Class */
       .text-fire {
-        background: linear-gradient(to top, #7f1d1d 5%, #dc2626 25%, #f97316 50%, #facc15 85%, #ffffff 100%);
-        -webkit-background-clip: text;
-        -webkit-text-fill-color: transparent;
-        animation: burn-text 0.4s infinite ease-in-out;
-        display: inline-block;
-        filter: drop-shadow(0 2px 2px rgba(0,0,0,0.3));
+        /* Remove o gradiente cartoon e usa cor sólida com shadow pulsante */
+        background: none; 
+        -webkit-text-fill-color: initial;
+        animation: ember-text 2s infinite ease-in-out;
+        position: relative;
+      }
+      
+      /* --- REALISTIC FIRE ENGINE (CSS LIGHTING) --- */
+      
+      /* 1. Oscilação lateral natural do fogo */
+      @keyframes real-flicker {
+        0% { transform: rotate(-1deg) scaleY(1.0) skewX(0deg); opacity: 0.9; }
+        20% { transform: rotate(1deg) scaleY(1.1) skewX(2deg); opacity: 1; }
+        40% { transform: rotate(-1deg) scaleY(1.0) skewX(-1deg); opacity: 0.8; }
+        60% { transform: rotate(1deg) scaleY(1.05) skewX(1deg); opacity: 1; }
+        80% { transform: rotate(-2deg) scaleY(0.95) skewX(-2deg); opacity: 0.9; }
+        100% { transform: rotate(-1deg) scaleY(1.0) skewX(0deg); opacity: 0.9; }
       }
 
-      /* Mascot Animation: Running/Panic/Fire */
+      /* 2. Pulsação do núcleo de calor (Branco/Amarelo) */
+      @keyframes heat-pulse {
+        0%, 100% { transform: scale(1); opacity: 0.8; }
+        50% { transform: scale(0.9); opacity: 0.6; }
+      }
+
+      /* 3. Partículas de cinza subindo */
+      @keyframes ash-rise {
+        0% { transform: translateY(0) scale(1); opacity: 1; }
+        100% { transform: translateY(-40px) scale(0); opacity: 0; }
+      }
+
+      /* Container do fogo realista */
+      .fire-container {
+        position: absolute;
+        bottom: 0;
+        left: 50%;
+        transform: translateX(-50%);
+        width: 100%;
+        height: 100%;
+        pointer-events: none;
+        mix-blend-mode: screen; /* CRUCIAL: Faz as cores somarem como luz */
+        filter: blur(4px) contrast(1.5); /* CRUCIAL: Suaviza as bordas para parecer gás/plasma */
+      }
+
+      /* Camada 1: Base Vermelha (O calor difuso) */
+      .flame-base {
+        position: absolute;
+        bottom: -5px;
+        left: 50%;
+        transform: translateX(-50%);
+        width: 140%;
+        height: 70%;
+        background: radial-gradient(ellipse at bottom, rgba(220, 38, 38, 0.8) 0%, transparent 70%);
+        border-radius: 50%;
+        animation: real-flicker 0.15s infinite alternate;
+      }
+
+      /* Camada 2: Corpo Laranja (A chama visível) */
+      .flame-body {
+        position: absolute;
+        bottom: 0;
+        left: 50%;
+        transform: translateX(-50%);
+        width: 80%;
+        height: 90%;
+        background: radial-gradient(ellipse at bottom, rgba(251, 146, 60, 0.9) 0%, rgba(234, 88, 12, 0) 80%);
+        border-radius: 50% 50% 40% 40%;
+        animation: real-flicker 0.2s infinite ease-in-out;
+      }
+
+      /* Camada 3: Núcleo Branco/Amarelo (Onde queima mais quente) */
+      .flame-core {
+        position: absolute;
+        bottom: 5px;
+        left: 50%;
+        transform: translateX(-50%);
+        width: 50%;
+        height: 50%;
+        background: radial-gradient(ellipse at bottom, #fefce8 40%, rgba(253, 224, 71, 0.8) 100%);
+        border-radius: 50%;
+        filter: blur(2px);
+        animation: heat-pulse 0.1s infinite alternate;
+      }
+
+      /* Helper Animations */
+      .animate-mascot-slow { animation: mascot-run 1s infinite ease-in-out; }
+      .animate-mascot-chill { animation: mascot-chill 4s ease-in-out infinite; }
+      .animate-cta-bounce { animation: cta-bounce 2s infinite ease-in-out; }
+      
       @keyframes mascot-run {
         0%, 100% { transform: translateY(0) rotate(0deg); }
         25% { transform: translateY(-5px) rotate(-5deg); }
         50% { transform: translateY(0) rotate(0deg); }
         75% { transform: translateY(-5px) rotate(5deg); }
       }
-      
-      @keyframes fire-pulse {
-        0%, 100% { filter: drop-shadow(0 0 5px rgba(249, 115, 22, 0.6)); }
-        50% { filter: drop-shadow(0 0 20px rgba(239, 68, 68, 0.9)); }
-      }
-
-      /* New Subtle Animation for Empty Cart (Chill Mode) */
       @keyframes mascot-chill {
         0%, 100% { transform: translateY(0) rotate(-2deg) scale(1); }
         50% { transform: translateY(-8px) rotate(2deg) scale(1.02); }
       }
-
-      /* CTA Bounce Animation */
       @keyframes cta-bounce {
         0%, 100% { transform: scale(1); box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06); }
         50% { transform: scale(1.03); box-shadow: 0 15px 20px -5px rgba(249, 115, 22, 0.4); }
       }
 
-      .animate-mascot {
-        animation: mascot-run 0.3s infinite linear, fire-pulse 1s infinite ease-in-out;
-      }
-      
-      /* Slower animation for header */
-      .animate-mascot-slow {
-        animation: mascot-run 1s infinite ease-in-out;
-      }
-
-      /* Gentle animation for empty cart */
-      .animate-mascot-chill {
-        animation: mascot-chill 4s ease-in-out infinite;
-      }
-
-      /* Button CTA Animation */
-      .animate-cta-bounce {
-        animation: cta-bounce 2s infinite ease-in-out;
-      }
-      .animate-cta-bounce:active {
-        animation: none; /* Stop animation on click to feel responsiveness */
-      }
     </style>
   <script type="importmap">
 {

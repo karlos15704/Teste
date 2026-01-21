@@ -49,6 +49,9 @@ const App: React.FC = () => {
   // Logout Modal State
   const [showLogoutModal, setShowLogoutModal] = useState(false);
 
+  // --- ESTADO PARA ANIMAÇÃO 'TÔ FRITO' NO LOGO DA ESCOLA ---
+  const [isBurning, setIsBurning] = useState(false);
+
   // --- CARREGAMENTO DE DADOS BLINDADO ---
   const loadData = async () => {
     // 0. Check for Active Session
@@ -192,6 +195,14 @@ const App: React.FC = () => {
   }, [currentView]); // Dependência: Recria o timer quando muda a tela
 
   // --- ACTIONS ---
+
+  const handleBurn = () => {
+    if (isBurning) return;
+    setIsBurning(true);
+    setTimeout(() => {
+      setIsBurning(false);
+    }, 3000); // Animação um pouco mais longa para apreciar
+  };
 
   const handleLogin = (user: User) => {
     setCurrentUser(user);
@@ -465,7 +476,7 @@ const App: React.FC = () => {
       {/* SIDEBAR NAVIGATION (DESKTOP) */}
       <nav className="hidden md:flex w-20 bg-gray-900 flex-col items-center py-4 gap-6 z-30 shadow-xl border-r border-gray-800 pt-6">
         
-        {/* ÍCONE DE CHAMA (RESTAURADO) */}
+        {/* ÍCONE DE CHAMA */}
         <div className="mb-2 p-2 bg-orange-900/30 rounded-full">
           <Flame className="text-orange-500 animate-pulse" size={24} />
         </div>
@@ -515,13 +526,39 @@ const App: React.FC = () => {
 
         <div className="flex-1"></div>
 
-        {/* LOGO DA ESCOLA NA SIDEBAR (DESIGN LEGAL) */}
-        <div className="flex flex-col items-center gap-1 opacity-80 hover:opacity-100 transition-opacity cursor-help mb-4" title={`Projeto Feira Cultural ${SCHOOL_CLASS} - Colégio Progresso Santista`}>
-           <div className="w-12 h-12 rounded-xl bg-white/10 flex items-center justify-center p-2 border border-white/10 shadow-inner">
-             <img src={SCHOOL_LOGO_URL} alt="Escola" className="w-full h-full object-contain" />
+        {/* LOGO DA ESCOLA NA SIDEBAR - NOVO SISTEMA DE FOGO REALISTA */}
+        <button 
+           onClick={handleBurn}
+           className={`relative flex flex-col items-center gap-1 transition-all cursor-pointer mb-4 select-none group
+             ${isBurning ? 'scale-110' : 'opacity-80 hover:opacity-100'}`}
+           title={`Projeto Feira Cultural ${SCHOOL_CLASS} - Colégio Progresso Santista`}
+        >
+           {/* Fundo muda de cor quando está queimando */}
+           <div className={`relative w-12 h-12 rounded-xl flex items-center justify-center p-2 border shadow-inner transition-colors duration-200 z-10
+             ${isBurning ? 'bg-orange-900 border-orange-500 shadow-orange-500/50' : 'bg-white/10 border-white/10'}`}>
+             
+             {/* Logo School */}
+             <img src={SCHOOL_LOGO_URL} alt="Escola" className="w-full h-full object-contain relative z-20" />
+
+             {/* FOGO REALISTA NOVO (Camadas de Luz e Blur) */}
+             {isBurning && (
+               <div className="fire-container">
+                  <div className="flame-base"></div>
+                  <div className="flame-body"></div>
+                  <div className="flame-core"></div>
+                  {/* Partículas de cinza */}
+                  <div className="absolute top-0 left-0 w-1 h-1 bg-white rounded-full animate-[ash-rise_1s_infinite] opacity-50"></div>
+                  <div className="absolute top-2 right-1 w-0.5 h-0.5 bg-yellow-100 rounded-full animate-[ash-rise_1.5s_infinite] opacity-60 delay-100"></div>
+               </div>
+             )}
            </div>
-           <span className="text-[9px] font-black text-gray-500 uppercase tracking-widest">{SCHOOL_CLASS}</span>
-        </div>
+           
+           {/* Texto 9B pega fogo estilo 'brasa' */}
+           <span className={`text-[9px] font-black uppercase tracking-widest transition-colors z-10 relative
+             ${isBurning ? 'text-fire scale-110' : 'text-gray-500'}`}>
+             {SCHOOL_CLASS}
+           </span>
+        </button>
 
         <button 
           onClick={() => setShowLogoutModal(true)}

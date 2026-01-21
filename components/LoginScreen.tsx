@@ -31,12 +31,12 @@ const LoginScreen: React.FC<LoginScreenProps> = ({ availableUsers, onLogin }) =>
       {/* Background Glow */}
       <div className="fixed inset-0 bg-[radial-gradient(circle_at_center,_var(--tw-gradient-stops))] from-orange-200/40 via-transparent to-transparent pointer-events-none"></div>
 
-      {/* Card Principal - Com max-height para evitar overflow */}
-      <div className="bg-white rounded-3xl shadow-[0_20px_50px_rgba(249,115,22,0.15)] p-6 md:p-8 max-w-sm w-full border border-orange-100 flex flex-col items-center animate-in zoom-in-95 duration-300 relative z-10 max-h-full overflow-y-auto scrollbar-hide">
+      {/* Card Principal - Blindado contra rolagem lateral */}
+      <div className="bg-white rounded-3xl shadow-[0_20px_50px_rgba(249,115,22,0.15)] p-6 md:p-8 w-full max-w-sm border border-orange-100 flex flex-col items-center animate-in zoom-in-95 duration-300 relative z-10 max-h-full overflow-y-auto overflow-x-hidden scrollbar-hide">
         
         {/* Decorative Fire Background Glow behind mascot */}
-        <div className="absolute -top-10 -left-10 w-32 h-32 bg-orange-100/50 rounded-full blur-3xl"></div>
-        <div className="absolute -top-10 -right-10 w-32 h-32 bg-red-100/30 rounded-full blur-3xl"></div>
+        <div className="absolute -top-10 -left-10 w-32 h-32 bg-orange-100/50 rounded-full blur-3xl pointer-events-none"></div>
+        <div className="absolute -top-10 -right-10 w-32 h-32 bg-red-100/30 rounded-full blur-3xl pointer-events-none"></div>
 
         {/* Mascote (Tamanho Reduzido) */}
         <div className="relative w-20 h-20 md:w-24 md:h-24 mb-1 flex-shrink-0">
@@ -114,21 +114,38 @@ const LoginScreen: React.FC<LoginScreenProps> = ({ availableUsers, onLogin }) =>
           </button>
         </form>
         
-        {/* RODAPÉ DA ESCOLA (Compacto) */}
+        {/* RODAPÉ DA ESCOLA (Compacto & Interativo) */}
         <div className="mt-4 pt-3 border-t border-orange-100 w-full flex flex-col items-center gap-2 flex-shrink-0">
            <p className="text-[9px] font-bold text-gray-400 uppercase tracking-widest">Projeto Feira Cultural</p>
            
-           <div className="flex items-center gap-2 bg-gray-900 py-1.5 px-3 rounded-full shadow-md transform hover:scale-105 transition-transform cursor-default group border border-gray-800">
-              {/* Container do Logo */}
-              <div className="relative h-6 w-6 flex items-center justify-center">
-                 <img src={SCHOOL_LOGO_URL} alt="Escola" className="w-full h-full object-contain" />
-              </div>
-              
-              <div className="h-3 w-px bg-gray-700"></div>
-              
-              <span className="text-yellow-400 font-black text-xs tracking-tighter group-hover:text-yellow-300 transition-colors">
-                {SCHOOL_CLASS}
-              </span>
+           {/* Container Interativo com Animação de Fogo REALISTA */}
+           <div className="relative group cursor-help select-none mt-1"> 
+             
+             {/* Efeitos de Fogo (Camadas) - Só aparecem no Hover */}
+             <div className="absolute inset-0 -top-2 scale-0 group-hover:scale-110 transition-transform duration-300 pointer-events-none opacity-0 group-hover:opacity-100">
+                <div className="fire-container">
+                   <div className="flame-base"></div>
+                   <div className="flame-body"></div>
+                   <div className="flame-core"></div>
+                </div>
+             </div>
+
+             {/* Container Principal do Botão */}
+             <div className="flex items-center gap-2 bg-gray-900 py-1.5 px-3 rounded-full shadow-md transform group-hover:scale-105 transition-all border border-gray-800 relative z-10 group-hover:border-orange-500/50">
+                {/* Container do Logo - Treme quando passa o mouse */}
+                <div className="relative h-6 w-6 flex items-center justify-center origin-bottom">
+                   <img src={SCHOOL_LOGO_URL} alt="Escola" className="w-full h-full object-contain relative z-20" />
+                   
+                   {/* Brilho interno do logo */}
+                   <div className="absolute inset-0 bg-yellow-400 blur-md opacity-0 group-hover:opacity-40 z-10 rounded-full"></div>
+                </div>
+                
+                <div className="h-3 w-px bg-gray-700 group-hover:bg-red-500 transition-colors"></div>
+                
+                <span className="text-yellow-400 font-black text-xs tracking-tighter group-hover:text-fire transition-all">
+                  {SCHOOL_CLASS}
+                </span>
+             </div>
            </div>
         </div>
       </div>
