@@ -1,3 +1,4 @@
+
 import React, { useMemo, useState } from 'react';
 import { Transaction, PaymentMethod } from '../types';
 import { formatCurrency } from '../utils';
@@ -141,7 +142,8 @@ const Reports: React.FC<ReportsProps> = ({ transactions, onCancelTransaction, on
 
     const dateStr = new Date().toLocaleDateString('pt-BR', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit' });
 
-    const productRows = Object.entries(stats.productSales)
+    // Added explicit type casting for Object.entries to fix 'unknown' type errors
+    const productRows = (Object.entries(stats.productSales) as [string, { quantity: number; total: number }][])
       .sort(([, a], [, b]) => b.quantity - a.quantity)
       .map(([name, data]) => `
         <tr>
@@ -151,7 +153,8 @@ const Reports: React.FC<ReportsProps> = ({ transactions, onCancelTransaction, on
         </tr>
       `).join('');
 
-    const sellerRows = Object.entries(stats.bySeller)
+    // Added explicit type casting for Object.entries to fix 'unknown' type errors
+    const sellerRows = (Object.entries(stats.bySeller) as [string, { count: number; total: number }][])
       .sort(([, a], [, b]) => b.total - a.total)
       .map(([name, data]) => `
         <tr>
@@ -161,7 +164,8 @@ const Reports: React.FC<ReportsProps> = ({ transactions, onCancelTransaction, on
         </tr>
       `).join('');
 
-    const paymentRows = Object.entries(stats.byMethod)
+    // Added explicit type casting for Object.entries to fix 'unknown' type errors
+    const paymentRows = (Object.entries(stats.byMethod) as [string, number][])
       .map(([method, value]) => `
         <tr>
           <td style="padding: 4px 0;">${method}</td>
@@ -539,7 +543,8 @@ const Reports: React.FC<ReportsProps> = ({ transactions, onCancelTransaction, on
           </h3>
           <div className="overflow-y-auto max-h-64 space-y-3">
              {Object.entries(stats.bySeller).length > 0 ? (
-                Object.entries(stats.bySeller)
+                // Added explicit type casting for Object.entries to fix 'unknown' type errors
+                (Object.entries(stats.bySeller) as [string, { count: number; total: number }][])
                   .sort(([, a], [, b]) => b.total - a.total)
                   .map(([name, data], idx) => (
                   <div key={name} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg border border-gray-100">

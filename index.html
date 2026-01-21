@@ -27,25 +27,42 @@
         background: #f97316; /* Orange-500 */
       }
       
-      /* Fire Animation Keyframes */
+      /* Fire Animation Keyframes - Refined for "Burning" effect */
       @keyframes burn-text {
-        0% {
-          text-shadow: 4px -4px 1px #fbbf24, 0 -5px 10px #f97316, 0 -10px 20px #dc2626;
+        0%, 100% {
+          text-shadow: 
+            2px -2px 4px rgba(250, 204, 21, 0.5),
+            0 -4px 10px rgba(249, 115, 22, 0.8),
+            0 -8px 20px rgba(220, 38, 38, 0.6);
+          transform: skewX(-6deg) translateY(0);
+        }
+        25% {
+          transform: skewX(-5deg) translateY(-1px) scale(1.01);
+          text-shadow: 
+            1px -3px 5px rgba(250, 204, 21, 0.6),
+            0 -6px 12px rgba(249, 115, 22, 0.9),
+            0 -10px 25px rgba(220, 38, 38, 0.7);
         }
         50% {
-          text-shadow: 4px -2px 1px #fbbf24, 0 -8px 15px #ea580c, 0 -15px 25px #b91c1c;
+          text-shadow: 
+            3px -1px 3px rgba(250, 204, 21, 0.4),
+            0 -5px 15px rgba(234, 88, 12, 0.8),
+            0 -12px 30px rgba(185, 28, 28, 0.8);
+          transform: skewX(-7deg) translateY(0) scale(0.99);
         }
-        100% {
-          text-shadow: 4px -6px 1px #fbbf24, 0 -5px 10px #f97316, 0 -10px 20px #dc2626;
+        75% {
+          transform: skewX(-5.5deg) translateY(-2px) scale(1.005);
         }
       }
 
-      /* Fire Text Effect Class - MORE INTENSE */
+      /* Fire Text Effect Class */
       .text-fire {
-        background: linear-gradient(to top, #dc2626 20%, #f97316 60%, #facc15 90%);
+        background: linear-gradient(to top, #7f1d1d 5%, #dc2626 25%, #f97316 50%, #facc15 85%, #ffffff 100%);
         -webkit-background-clip: text;
         -webkit-text-fill-color: transparent;
-        animation: burn-text 0.5s infinite alternate ease-in-out;
+        animation: burn-text 0.4s infinite ease-in-out;
+        display: inline-block;
+        filter: drop-shadow(0 2px 2px rgba(0,0,0,0.3));
       }
 
       /* Mascot Animation: Running/Panic/Fire */

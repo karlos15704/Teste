@@ -15,10 +15,10 @@ import {
   updateTransactionStatus, 
   updateKitchenStatus, 
   subscribeToTransactions,
-  fetchUsers, // Importado
-  createUser, // Importado
-  updateUser, // Importado
-  deleteUser  // Importado
+  fetchUsers, 
+  createUser, 
+  updateUser, 
+  deleteUser
 } from './services/supabase';
 import { LayoutGrid, BarChart3, Flame, CheckCircle2, ChefHat, WifiOff, LogOut, UserCircle2, Users as UsersIcon, UploadCloud, ShoppingCart } from 'lucide-react';
 
@@ -547,7 +547,7 @@ const App: React.FC = () => {
                 <div className="flex items-center gap-3 md:gap-5 transition-transform hover:scale-105 duration-300">
                    <img 
                       src={MASCOT_URL} 
-                      className="w-12 h-12 md:w-20 md:h-20 object-contain mix-blend-multiply animate-mascot-slow" 
+                      className="w-12 h-12 md:w-20 md:h-20 object-contain mix-blend-multiply animate-mascot-slow drop-shadow-[0_10px_10px_rgba(0,0,0,0.2)]" 
                       alt="Mascote" 
                       loading="eager"
                       fetchPriority="high"
@@ -558,140 +558,77 @@ const App: React.FC = () => {
                 </div>
               </header>
               <div className="flex-1 overflow-hidden relative">
-                {/* PASSAMOS O CART AQUI */}
-                <ProductGrid products={MOCK_PRODUCTS} cart={cart} onAddToCart={addToCart} />
-              </div>
-
-              {/* MOBILE CART FLOATING BAR */}
-              <div className="md:hidden fixed bottom-20 left-4 right-4 z-50">
-                {cartItemCount > 0 && !isMobileCartOpen && (
-                  <button 
-                    onClick={() => setIsMobileCartOpen(true)}
-                    className="w-full bg-gray-900 text-white rounded-xl shadow-2xl p-4 flex justify-between items-center animate-in slide-in-from-bottom-10 duration-300 border border-gray-700"
-                  >
-                    <div className="flex items-center gap-3">
-                      <div className="bg-orange-600 text-white text-xs font-bold w-8 h-8 rounded-full flex items-center justify-center">
-                        {cartItemCount}
-                      </div>
-                      <div className="text-left">
-                        <p className="text-xs text-gray-400">Total a pagar</p>
-                        <p className="font-bold text-lg leading-none">{formatCurrency(cartTotal)}</p>
-                      </div>
-                    </div>
-                    <div className="flex items-center gap-2 text-sm font-bold bg-gray-800 px-3 py-1.5 rounded-lg">
-                      Ver Carrinho <ShoppingCart size={16} />
-                    </div>
-                  </button>
-                )}
+                <ProductGrid 
+                  products={MOCK_PRODUCTS} 
+                  cart={cart} 
+                  onAddToCart={addToCart} 
+                />
               </div>
             </div>
-
-            {/* CART SIDEBAR - Responsive Wrapper */}
+            
+            {/* Sidebar / Cart */}
             <div className={`
-                fixed inset-0 z-50 bg-white md:static md:z-auto md:w-96 md:min-w-[350px] md:h-full shadow-2xl transition-transform duration-300 ease-in-out
-                ${isMobileCartOpen ? 'translate-y-0' : 'translate-y-full md:translate-y-0'}
+              fixed inset-y-0 right-0 z-50 w-full md:relative md:w-96 transform transition-transform duration-300 ease-in-out md:transform-none shadow-2xl md:shadow-none
+              ${isMobileCartOpen ? 'translate-x-0' : 'translate-x-full'}
             `}>
-              <CartSidebar 
-                cart={cart}
-                onRemoveItem={removeFromCart}
-                onUpdateQuantity={updateCartQuantity}
-                onClearCart={clearCart}
-                onCheckout={handleCheckout}
-                onClose={() => setIsMobileCartOpen(false)}
-              />
+               <CartSidebar 
+                  cart={cart}
+                  onRemoveItem={removeFromCart}
+                  onUpdateQuantity={updateCartQuantity}
+                  onClearCart={clearCart}
+                  onCheckout={handleCheckout}
+                  onClose={() => setIsMobileCartOpen(false)}
+               />
             </div>
           </div>
+        )}
+
+        {/* Reports View */}
+        {currentView === 'reports' && (
+          <Reports 
+            transactions={transactions} 
+            onCancelTransaction={handleCancelTransaction}
+            onResetSystem={handleResetSystem}
+          />
         )}
 
         {/* Kitchen View */}
-        {(currentView === 'kitchen' && (isAdminUser || isKitchenUser)) && (
-          <div className="w-full h-full bg-slate-100 pb-20 md:pb-0">
-            <KitchenDisplay 
-              transactions={transactions} 
-              onUpdateStatus={handleUpdateKitchenStatus}
-            />
-          </div>
+        {currentView === 'kitchen' && (
+          <KitchenDisplay 
+            transactions={transactions} 
+            onUpdateStatus={handleUpdateKitchenStatus} 
+          />
         )}
 
-        {/* Reports View (Admin Only) */}
-        {(currentView === 'reports' && isAdminUser) && (
-          <div className="w-full h-full bg-orange-50/50 pb-20 md:pb-0">
-            <Reports 
-              key={transactions.length}
-              transactions={transactions} 
-              onCancelTransaction={handleCancelTransaction}
-              onResetSystem={handleResetSystem}
-            />
-          </div>
-        )}
-
-        {/* User Management View (Agora acessível para todos, mas com filtros internos) */}
+        {/* User Management View */}
         {currentView === 'users' && (
-          <div className="w-full h-full bg-orange-50/50 pb-20 md:pb-0">
-            <UserManagement 
-              users={users}
-              onAddUser={handleAddUser}
-              onUpdateUser={handleUpdateUser}
-              onDeleteUser={handleDeleteUser}
-              currentUser={currentUser}
-            />
-          </div>
+          <UserManagement
+            users={users}
+            onAddUser={handleAddUser}
+            onUpdateUser={handleUpdateUser}
+            onDeleteUser={handleDeleteUser}
+            currentUser={currentUser}
+          />
         )}
+
+        {/* Mobile Cart Toggle Button */}
+        {currentView === 'pos' && !isMobileCartOpen && (
+          <button
+            onClick={() => setIsMobileCartOpen(true)}
+            className="md:hidden fixed bottom-6 right-6 bg-orange-600 text-white p-4 rounded-full shadow-lg shadow-orange-600/40 z-50 animate-bounce"
+          >
+            <div className="relative">
+              <ShoppingCart size={24} />
+              {cartItemCount > 0 && (
+                <span className="absolute -top-2 -right-2 bg-white text-orange-600 text-xs font-bold w-5 h-5 flex items-center justify-center rounded-full border border-orange-100">
+                  {cartItemCount}
+                </span>
+              )}
+            </div>
+          </button>
+        )}
+
       </main>
-
-      {/* MOBILE BOTTOM NAVIGATION */}
-      <div className="md:hidden bg-white border-t border-gray-200 fixed bottom-0 w-full z-50 pb-safe flex justify-around items-center h-16 shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.05)]">
-        {(isAdminUser || isCashierUser) && (
-          <button 
-            onClick={() => {
-              setCurrentView('pos');
-              setIsMobileCartOpen(false);
-            }}
-            className={`flex flex-col items-center justify-center w-full h-full ${currentView === 'pos' ? 'text-orange-600' : 'text-gray-400'}`}
-          >
-             <LayoutGrid size={24} className={currentView === 'pos' ? 'mb-1' : ''} />
-             <span className="text-[10px] font-bold">Caixa</span>
-          </button>
-        )}
-
-        {(isAdminUser || isKitchenUser) && (
-          <button 
-             onClick={() => {
-               setCurrentView('kitchen');
-               setIsMobileCartOpen(false);
-             }}
-             className={`flex flex-col items-center justify-center w-full h-full ${currentView === 'kitchen' ? 'text-orange-600' : 'text-gray-400'}`}
-          >
-             <ChefHat size={24} className={currentView === 'kitchen' ? 'mb-1' : ''} />
-             <span className="text-[10px] font-bold">Cozinha</span>
-          </button>
-        )}
-
-        {isAdminUser && (
-          <button 
-             onClick={() => {
-               setCurrentView('reports');
-               setIsMobileCartOpen(false);
-             }}
-             className={`flex flex-col items-center justify-center w-full h-full ${currentView === 'reports' ? 'text-orange-600' : 'text-gray-400'}`}
-          >
-             <BarChart3 size={24} className={currentView === 'reports' ? 'mb-1' : ''} />
-             <span className="text-[10px] font-bold">Relatórios</span>
-          </button>
-        )}
-        
-        {/* BOTÃO EQUIPE TAMBÉM NO MOBILE PARA TODOS */}
-        <button 
-            onClick={() => {
-              setCurrentView('users');
-              setIsMobileCartOpen(false);
-            }}
-            className={`flex flex-col items-center justify-center w-full h-full ${currentView === 'users' ? 'text-orange-600' : 'text-gray-400'}`}
-        >
-            <UsersIcon size={24} className={currentView === 'users' ? 'mb-1' : ''} />
-            <span className="text-[10px] font-bold">Equipe</span>
-        </button>
-      </div>
     </div>
   );
 };
