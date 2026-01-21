@@ -2,7 +2,7 @@ import React, { useState, useMemo, useEffect, useRef } from 'react';
 import { CartItem, PaymentMethod } from '../types';
 import { formatCurrency } from '../utils';
 import { MASCOT_URL } from '../constants';
-import { X, Trash2, ShoppingCart, CreditCard, Banknote, QrCode, Lock, Unlock, Plus, Minus, CheckCircle2, Calculator } from 'lucide-react';
+import { X, Trash2, ShoppingCart, CreditCard, Banknote, QrCode, Lock, Unlock, Plus, Minus, CheckCircle2, Calculator, ChevronDown } from 'lucide-react';
 
 interface CartSidebarProps {
   cart: CartItem[];
@@ -10,9 +10,10 @@ interface CartSidebarProps {
   onUpdateQuantity: (productId: string, delta: number) => void;
   onClearCart: () => void;
   onCheckout: (discount: number, method: PaymentMethod, change?: number, amountPaid?: number) => void;
+  onClose?: () => void; // Prop opcional para fechar no mobile
 }
 
-const CartSidebar: React.FC<CartSidebarProps> = ({ cart, onRemoveItem, onUpdateQuantity, onClearCart, onCheckout }) => {
+const CartSidebar: React.FC<CartSidebarProps> = ({ cart, onRemoveItem, onUpdateQuantity, onClearCart, onCheckout, onClose }) => {
   const [discountValue, setDiscountValue] = useState<string>('');
   const [selectedMethod, setSelectedMethod] = useState<PaymentMethod | null>(null);
   
@@ -61,6 +62,7 @@ const CartSidebar: React.FC<CartSidebarProps> = ({ cart, onRemoveItem, onUpdateQ
     setIsDiscountUnlocked(false);
     setShowPasswordInput(false);
     setPasswordAttempt('');
+    if (onClose) onClose(); // Fecha o mobile drawer após checkout
   };
 
   const handleCheckout = () => {
@@ -127,6 +129,16 @@ const CartSidebar: React.FC<CartSidebarProps> = ({ cart, onRemoveItem, onUpdateQ
   if (cart.length === 0) {
     return (
       <div className="h-full flex flex-col items-center justify-center text-gray-400 p-8 bg-white border-l border-orange-100 relative overflow-hidden">
+        {/* Mobile Close Button for Empty State */}
+        {onClose && (
+          <button 
+            onClick={onClose} 
+            className="absolute top-4 left-4 md:hidden p-2 bg-gray-100 rounded-full text-gray-600 z-50"
+          >
+            <ChevronDown size={24} />
+          </button>
+        )}
+
         {/* Mascot Image with Animation */}
         <div className="mb-6 relative w-48 h-48">
           <div className="absolute inset-0 bg-orange-100 rounded-full blur-2xl opacity-50 transform scale-110"></div>
@@ -150,7 +162,7 @@ const CartSidebar: React.FC<CartSidebarProps> = ({ cart, onRemoveItem, onUpdateQ
     <>
       {/* CASH CALCULATOR MODAL */}
       {showCashModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4 animate-in fade-in duration-200">
+        <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/80 backdrop-blur-sm p-4 animate-in fade-in duration-200">
            <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full overflow-hidden flex flex-col animate-in zoom-in-95 duration-200 relative">
               <div className="bg-orange-600 p-4 text-white flex justify-between items-center">
                  <h3 className="font-bold text-lg flex items-center gap-2">
@@ -239,7 +251,7 @@ const CartSidebar: React.FC<CartSidebarProps> = ({ cart, onRemoveItem, onUpdateQ
 
       {/* PIX MODAL OVERLAY */}
       {showPixModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4 animate-in fade-in duration-200">
+        <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/80 backdrop-blur-sm p-4 animate-in fade-in duration-200">
           <div className="bg-white rounded-2xl shadow-2xl max-w-sm w-full overflow-hidden flex flex-col animate-in zoom-in-95 duration-200 relative">
             
             {/* Close Button Absolute for cleaner look */}
@@ -295,7 +307,14 @@ const CartSidebar: React.FC<CartSidebarProps> = ({ cart, onRemoveItem, onUpdateQ
         {/* Header */}
         <div className="p-4 bg-orange-50 border-b border-orange-100 flex justify-between items-center shadow-sm">
           <div className="flex items-center gap-2">
-            <div className="p-2 bg-white rounded-full text-orange-600 shadow-sm">
+            {/* Mobile Close Button */}
+            {onClose && (
+               <button onClick={onClose} className="md:hidden p-1.5 mr-1 bg-white rounded-lg border border-gray-200 text-gray-600 shadow-sm active:scale-95">
+                  <ChevronDown size={20} />
+               </button>
+            )}
+
+            <div className="p-2 bg-white rounded-full text-orange-600 shadow-sm hidden md:block">
               <ShoppingCart size={20} />
             </div>
             <h2 className="font-bold text-gray-800 text-lg">Seu Pedido</h2>
@@ -312,19 +331,25 @@ const CartSidebar: React.FC<CartSidebarProps> = ({ cart, onRemoveItem, onUpdateQ
         {/* Items List */}
         <div className="flex-1 overflow-y-auto p-4 space-y-3">
           {cart.map((item) => (
-            <div key={item.id} className="flex gap-3 bg-white border border-gray-100 rounded-xl p-2 shadow-sm hover:shadow-md transition-shadow group">
-               <div className="w-16 h-16 bg-gray-100 rounded-lg flex-shrink-0 overflow-hidden">
+            <div key={item.id} className="flex gap-3 bg-white border border-gray-100 rounded-xl p-2 shadow-sm hover:shadow-md transition-shadow group animate-in slide-in-from-left-2 duration-200">
+               <div className="w-16 h-16 bg-gray-100 rounded-lg flex-shrink-0 overflow-hidden relative">
                  <img src={item.imageUrl} alt={item.name} className="w-full h-full object-cover" />
+                 <div className="absolute top-0 right-0 bg-orange-600 text-white text-[10px] font-bold px-1.5 py-0.5 rounded-bl-lg">
+                   x{item.quantity}
+                 </div>
                </div>
                
                <div className="flex-1 flex flex-col justify-between">
                   <div className="flex justify-between items-start">
                      <h4 className="text-sm font-bold text-gray-800 line-clamp-2 leading-tight">{item.name}</h4>
+                     
+                     {/* BOTÃO X ATUALIZADO: Sempre visível, vermelho e fácil de clicar */}
                      <button 
                        onClick={() => onRemoveItem(item.id)} 
-                       className="text-gray-300 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-opacity"
+                       className="text-red-400 hover:text-red-600 bg-red-50 hover:bg-red-100 p-1 rounded-md transition-colors"
+                       title="Remover item"
                      >
-                       <X size={16} />
+                       <X size={18} />
                      </button>
                   </div>
                   

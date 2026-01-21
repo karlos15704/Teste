@@ -20,7 +20,7 @@ import {
   updateUser, // Importado
   deleteUser  // Importado
 } from './services/supabase';
-import { LayoutGrid, BarChart3, Flame, CheckCircle2, ChefHat, WifiOff, LogOut, UserCircle2, Users as UsersIcon, RefreshCw, UploadCloud } from 'lucide-react';
+import { LayoutGrid, BarChart3, Flame, CheckCircle2, ChefHat, WifiOff, LogOut, UserCircle2, Users as UsersIcon, RefreshCw, UploadCloud, ShoppingCart } from 'lucide-react';
 
 const App: React.FC = () => {
   // Login & Users State
@@ -29,6 +29,9 @@ const App: React.FC = () => {
 
   // View State
   const [currentView, setCurrentView] = useState<'pos' | 'reports' | 'kitchen' | 'users'>('pos');
+  
+  // Mobile UI States
+  const [isMobileCartOpen, setIsMobileCartOpen] = useState(false);
   
   const [cart, setCart] = useState<CartItem[]>([]);
   
@@ -285,6 +288,7 @@ const App: React.FC = () => {
       
       setLastCompletedOrder({ number: safeOrderNumber, change });
       clearCart();
+      setIsMobileCartOpen(false); // Fecha o carrinho mobile se estiver aberto
       setNextOrderNumber(prev => (prev || 1) + 1);
 
       // 2. SINCRONIZAÇÃO EM SEGUNDO PLANO
@@ -340,6 +344,10 @@ const App: React.FC = () => {
     window.location.reload();
   };
 
+  // Helper for mobile cart
+  const cartItemCount = cart.reduce((acc, item) => acc + item.quantity, 0);
+  const cartTotal = cart.reduce((acc, item) => acc + (item.price * item.quantity), 0);
+
   if (isLoading) {
     return (
       <div className="h-screen w-screen flex flex-col items-center justify-center bg-orange-50">
@@ -358,27 +366,27 @@ const App: React.FC = () => {
   const isAdminUser = currentUser.role === 'admin';
 
   return (
-    <div className="h-screen w-screen flex overflow-hidden bg-orange-50 relative">
+    <div className="h-screen w-screen flex flex-col md:flex-row overflow-hidden bg-orange-50 relative">
       
       {/* STATUS BAR */}
       <div className="absolute top-0 left-0 w-full z-50 flex justify-center pointer-events-none">
         {!isConnected && (
            <div className="bg-red-600 text-white text-xs py-1 px-4 rounded-b-lg shadow-md flex items-center gap-2 pointer-events-auto">
               <WifiOff size={14} />
-              <span>OFFLINE - Dados Salvos Localmente</span>
+              <span>OFFLINE</span>
            </div>
         )}
         {isConnected && isSyncing && (
            <div className="bg-blue-600 text-white text-xs py-1 px-4 rounded-b-lg shadow-md flex items-center gap-2 pointer-events-auto animate-pulse">
               <UploadCloud size={14} />
-              <span>Sincronizando banco de dados...</span>
+              <span>Sincronizando...</span>
            </div>
         )}
       </div>
 
       {/* Logout Confirmation Modal */}
       {showLogoutModal && (
-        <div className="absolute inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 animate-in fade-in duration-200">
+        <div className="absolute inset-0 z-[60] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 animate-in fade-in duration-200">
           <div className="bg-white rounded-xl shadow-2xl p-6 max-w-sm w-full animate-in zoom-in-95 duration-200">
             <h3 className="text-lg font-bold text-gray-800 mb-2 flex items-center gap-2">
               <LogOut className="text-red-500" size={24} />
@@ -407,7 +415,7 @@ const App: React.FC = () => {
 
       {/* Success Modal */}
       {lastCompletedOrder && !isKitchenUser && (
-        <div className="absolute inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 animate-in fade-in duration-200">
+        <div className="absolute inset-0 z-[60] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 animate-in fade-in duration-200">
           <div className="bg-white rounded-3xl shadow-2xl p-8 max-w-sm w-full text-center transform scale-100 animate-in zoom-in-95 duration-200">
             <div className="mb-6 flex justify-center">
               <div className="bg-green-100 p-4 rounded-full">
@@ -441,13 +449,12 @@ const App: React.FC = () => {
         </div>
       )}
 
-      {/* Sidebar Navigation */}
-      <nav className="w-20 bg-gray-900 flex flex-col items-center py-4 gap-6 z-30 shadow-xl border-r border-gray-800 pt-6">
+      {/* SIDEBAR NAVIGATION (DESKTOP) */}
+      <nav className="hidden md:flex w-20 bg-gray-900 flex-col items-center py-4 gap-6 z-30 shadow-xl border-r border-gray-800 pt-6">
         <div className="text-orange-500 p-2 bg-gray-800 rounded-full mb-2 border border-orange-600 shadow-lg shadow-orange-900/50 hover:rotate-12 transition-transform duration-500 hover:scale-110">
           <Flame size={24} fill="currentColor" className="text-orange-500 animate-pulse" />
         </div>
         
-        {/* BOTÃO CAIXA (Visível para Admin e Caixa) */}
         {(isAdminUser || isCashierUser) && (
           <button 
             onClick={() => setCurrentView('pos')}
@@ -455,124 +462,146 @@ const App: React.FC = () => {
             title="Caixa / Pedidos"
           >
             <LayoutGrid size={24} className={`transition-transform duration-300 ${currentView === 'pos' ? '' : 'group-hover:rotate-3'}`} />
-            {currentView === 'pos' && (
-              <span className="absolute -right-1 -top-1 w-3 h-3 bg-white border-2 border-gray-900 rounded-full animate-bounce" />
-            )}
+            {currentView === 'pos' && <span className="absolute -right-1 -top-1 w-3 h-3 bg-white border-2 border-gray-900 rounded-full animate-bounce" />}
           </button>
         )}
 
-        {/* BOTÃO COZINHA (Visível para Admin e Cozinha) */}
         {(isAdminUser || isKitchenUser) && (
           <button 
             onClick={() => setCurrentView('kitchen')}
             className={`p-3 rounded-2xl transition-all duration-300 group relative ${currentView === 'kitchen' ? 'bg-orange-600 text-white shadow-lg shadow-orange-900/50 scale-105' : 'text-gray-400 hover:text-white hover:bg-gray-800 hover:scale-110'}`}
-            title="Cozinha / Expedição"
+            title="Cozinha"
           >
             <ChefHat size={24} className={`transition-transform duration-300 ${currentView === 'kitchen' ? '' : 'group-hover:rotate-6'}`} />
-            {currentView === 'kitchen' && (
-              <span className="absolute -right-1 -top-1 w-3 h-3 bg-white border-2 border-gray-900 rounded-full animate-bounce" />
-              
-            )}
+            {currentView === 'kitchen' && <span className="absolute -right-1 -top-1 w-3 h-3 bg-white border-2 border-gray-900 rounded-full animate-bounce" />}
           </button>
         )}
 
-        {/* BOTÃO RELATÓRIOS (Apenas Admin) */}
         {isAdminUser && (
           <button 
             onClick={() => setCurrentView('reports')}
             className={`p-3 rounded-2xl transition-all duration-300 group relative ${currentView === 'reports' ? 'bg-orange-600 text-white shadow-lg shadow-orange-900/50 scale-105' : 'text-gray-400 hover:text-white hover:bg-gray-800 hover:scale-110'}`}
-            title="Relatórios de Vendas"
+            title="Relatórios"
           >
             <BarChart3 size={24} className={`transition-transform duration-300 ${currentView === 'reports' ? '' : 'group-hover:-rotate-3'}`} />
-            {currentView === 'reports' && (
-              <span className="absolute -right-1 -top-1 w-3 h-3 bg-white border-2 border-gray-900 rounded-full animate-bounce" />
-            )}
+            {currentView === 'reports' && <span className="absolute -right-1 -top-1 w-3 h-3 bg-white border-2 border-gray-900 rounded-full animate-bounce" />}
           </button>
         )}
 
-        {/* ADMIN ONLY: Users Management */}
         {isAdminUser && (
           <button 
             onClick={() => setCurrentView('users')}
             className={`p-3 rounded-2xl transition-all duration-300 group relative ${currentView === 'users' ? 'bg-orange-600 text-white shadow-lg shadow-orange-900/50 scale-105' : 'text-gray-400 hover:text-white hover:bg-gray-800 hover:scale-110'}`}
-            title="Gerenciar Equipe"
+            title="Equipe"
           >
             <UsersIcon size={24} className={`transition-transform duration-300 ${currentView === 'users' ? '' : 'group-hover:rotate-6'}`} />
-            {currentView === 'users' && (
-              <span className="absolute -right-1 -top-1 w-3 h-3 bg-white border-2 border-gray-900 rounded-full animate-bounce" />
-            )}
+            {currentView === 'users' && <span className="absolute -right-1 -top-1 w-3 h-3 bg-white border-2 border-gray-900 rounded-full animate-bounce" />}
           </button>
         )}
 
         <div className="flex-1"></div>
 
-        {/* Reload Button */}
         <button 
           onClick={handleManualReload}
           className="p-3 rounded-2xl text-blue-400 hover:bg-blue-500 hover:text-white transition-all duration-300 mb-2 hover:scale-110 active:scale-95 group"
-          title="Recarregar Sistema"
+          title="Recarregar"
         >
           <RefreshCw size={24} className="group-hover:animate-spin" />
         </button>
 
-        {/* Logout Button */}
         <button 
           onClick={() => setShowLogoutModal(true)}
           className="p-3 rounded-2xl text-red-400 hover:bg-red-500 hover:text-white transition-all duration-300 mb-4 hover:scale-110 active:scale-95"
-          title="Sair / Logout"
+          title="Sair"
         >
           <LogOut size={24} />
         </button>
       </nav>
 
       {/* Main Content Area */}
-      <main className="flex-1 flex overflow-hidden pt-6 relative">
-        {/* User Info Badge */}
-        <div className="absolute top-4 right-6 z-40 bg-white/90 backdrop-blur border border-orange-200 px-4 py-1.5 rounded-full shadow-sm flex items-center gap-2">
-           <UserCircle2 size={16} className="text-orange-600"/>
-           <span className="text-xs font-bold text-gray-700 uppercase">{currentUser.name}</span>
-           {isKitchenUser && <span className="text-xs bg-blue-100 text-blue-600 px-2 py-0.5 rounded font-bold">COZINHA</span>}
-           {isCashierUser && <span className="text-xs bg-green-100 text-green-600 px-2 py-0.5 rounded font-bold">CAIXA</span>}
+      <main className="flex-1 flex flex-col overflow-hidden relative">
+        {/* User Info Badge (Desktop) / Header (Mobile) */}
+        <div className="md:absolute md:top-4 md:right-6 z-40 bg-white/90 backdrop-blur border-b md:border border-orange-200 px-4 py-3 md:py-1.5 md:rounded-full shadow-sm flex items-center justify-between md:justify-start gap-2 w-full md:w-auto">
+           <div className="flex items-center gap-2">
+              <UserCircle2 size={16} className="text-orange-600"/>
+              <span className="text-xs font-bold text-gray-700 uppercase">{currentUser.name}</span>
+              {isKitchenUser && <span className="text-xs bg-blue-100 text-blue-600 px-2 py-0.5 rounded font-bold">COZINHA</span>}
+              {isCashierUser && <span className="text-xs bg-green-100 text-green-600 px-2 py-0.5 rounded font-bold">CAIXA</span>}
+           </div>
+           
+           {/* Mobile Logout (Header) */}
+           <button onClick={() => setShowLogoutModal(true)} className="md:hidden text-gray-400">
+             <LogOut size={18} />
+           </button>
         </div>
 
         {/* PDV / POS View */}
         {currentView === 'pos' && (
-          <>
+          <div className="flex-1 flex flex-col md:flex-row min-h-0 relative">
             <div className="flex-1 flex flex-col min-w-0">
-              <header className="px-6 py-4 bg-white border-b border-orange-100 shadow-sm z-10 relative flex items-center justify-center min-h-[90px]">
-                <div className="flex items-center gap-5 transition-transform hover:scale-105 duration-300">
+              <header className="px-6 py-2 md:py-4 bg-white border-b border-orange-100 shadow-sm z-10 relative flex items-center justify-center min-h-[70px] md:min-h-[90px]">
+                <div className="flex items-center gap-3 md:gap-5 transition-transform hover:scale-105 duration-300">
                    <img 
                       src={MASCOT_URL} 
-                      className="w-20 h-20 object-contain mix-blend-multiply animate-mascot-slow" 
+                      className="w-12 h-12 md:w-20 md:h-20 object-contain mix-blend-multiply animate-mascot-slow" 
                       alt="Mascote" 
                       loading="eager"
                       fetchPriority="high"
                     />
-                   <h1 className="text-5xl font-black text-fire uppercase tracking-tighter transform -skew-x-6 drop-shadow-sm" style={{ textShadow: '3px 3px 0px rgba(0,0,0,0.8)' }}>
+                   <h1 className="text-3xl md:text-5xl font-black text-fire uppercase tracking-tighter transform -skew-x-6 drop-shadow-sm" style={{ textShadow: '2px 2px 0px rgba(0,0,0,0.8)' }}>
                      {APP_NAME}
                    </h1>
                 </div>
               </header>
               <div className="flex-1 overflow-hidden relative">
-                <ProductGrid products={MOCK_PRODUCTS} onAddToCart={addToCart} />
+                {/* PASSAMOS O CART AQUI */}
+                <ProductGrid products={MOCK_PRODUCTS} cart={cart} onAddToCart={addToCart} />
+              </div>
+
+              {/* MOBILE CART FLOATING BAR */}
+              <div className="md:hidden fixed bottom-20 left-4 right-4 z-50">
+                {cartItemCount > 0 && !isMobileCartOpen && (
+                  <button 
+                    onClick={() => setIsMobileCartOpen(true)}
+                    className="w-full bg-gray-900 text-white rounded-xl shadow-2xl p-4 flex justify-between items-center animate-in slide-in-from-bottom-10 duration-300 border border-gray-700"
+                  >
+                    <div className="flex items-center gap-3">
+                      <div className="bg-orange-600 text-white text-xs font-bold w-8 h-8 rounded-full flex items-center justify-center">
+                        {cartItemCount}
+                      </div>
+                      <div className="text-left">
+                        <p className="text-xs text-gray-400">Total a pagar</p>
+                        <p className="font-bold text-lg leading-none">{formatCurrency(cartTotal)}</p>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-2 text-sm font-bold bg-gray-800 px-3 py-1.5 rounded-lg">
+                      Ver Carrinho <ShoppingCart size={16} />
+                    </div>
+                  </button>
+                )}
               </div>
             </div>
 
-            <div className="w-96 min-w-[350px] h-full shadow-2xl z-20">
+            {/* CART SIDEBAR - Responsive Wrapper */}
+            <div className={`
+                fixed inset-0 z-50 bg-white md:static md:z-auto md:w-96 md:min-w-[350px] md:h-full shadow-2xl transition-transform duration-300 ease-in-out
+                ${isMobileCartOpen ? 'translate-y-0' : 'translate-y-full md:translate-y-0'}
+            `}>
               <CartSidebar 
                 cart={cart}
                 onRemoveItem={removeFromCart}
                 onUpdateQuantity={updateCartQuantity}
                 onClearCart={clearCart}
                 onCheckout={handleCheckout}
+                onClose={() => setIsMobileCartOpen(false)}
               />
             </div>
-          </>
+          </div>
         )}
 
         {/* Kitchen View */}
         {(currentView === 'kitchen' && (isAdminUser || isKitchenUser)) && (
-          <div className="w-full h-full bg-slate-100">
+          <div className="w-full h-full bg-slate-100 pb-20 md:pb-0">
             <KitchenDisplay 
               transactions={transactions} 
               onUpdateStatus={handleUpdateKitchenStatus}
@@ -582,7 +611,7 @@ const App: React.FC = () => {
 
         {/* Reports View (Admin Only) */}
         {(currentView === 'reports' && isAdminUser) && (
-          <div className="w-full h-full bg-orange-50/50">
+          <div className="w-full h-full bg-orange-50/50 pb-20 md:pb-0">
             <Reports 
               key={transactions.length}
               transactions={transactions} 
@@ -594,7 +623,7 @@ const App: React.FC = () => {
 
         {/* User Management View (Admin Only) */}
         {(currentView === 'users' && isAdminUser) && (
-          <div className="w-full h-full bg-orange-50/50">
+          <div className="w-full h-full bg-orange-50/50 pb-20 md:pb-0">
             <UserManagement 
               users={users}
               onAddUser={handleAddUser}
@@ -605,6 +634,56 @@ const App: React.FC = () => {
           </div>
         )}
       </main>
+
+      {/* MOBILE BOTTOM NAVIGATION */}
+      <div className="md:hidden bg-white border-t border-gray-200 fixed bottom-0 w-full z-50 pb-safe flex justify-around items-center h-16 shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.05)]">
+        {(isAdminUser || isCashierUser) && (
+          <button 
+            onClick={() => {
+              setCurrentView('pos');
+              setIsMobileCartOpen(false);
+            }}
+            className={`flex flex-col items-center justify-center w-full h-full ${currentView === 'pos' ? 'text-orange-600' : 'text-gray-400'}`}
+          >
+             <LayoutGrid size={24} className={currentView === 'pos' ? 'mb-1' : ''} />
+             <span className="text-[10px] font-bold">Caixa</span>
+          </button>
+        )}
+
+        {(isAdminUser || isKitchenUser) && (
+          <button 
+             onClick={() => {
+               setCurrentView('kitchen');
+               setIsMobileCartOpen(false);
+             }}
+             className={`flex flex-col items-center justify-center w-full h-full ${currentView === 'kitchen' ? 'text-orange-600' : 'text-gray-400'}`}
+          >
+             <ChefHat size={24} className={currentView === 'kitchen' ? 'mb-1' : ''} />
+             <span className="text-[10px] font-bold">Cozinha</span>
+          </button>
+        )}
+
+        {isAdminUser && (
+          <button 
+             onClick={() => {
+               setCurrentView('reports');
+               setIsMobileCartOpen(false);
+             }}
+             className={`flex flex-col items-center justify-center w-full h-full ${currentView === 'reports' ? 'text-orange-600' : 'text-gray-400'}`}
+          >
+             <BarChart3 size={24} className={currentView === 'reports' ? 'mb-1' : ''} />
+             <span className="text-[10px] font-bold">Relatórios</span>
+          </button>
+        )}
+
+        <button 
+           onClick={handleManualReload}
+           className="flex flex-col items-center justify-center w-full h-full text-blue-400"
+        >
+           <RefreshCw size={22} />
+           <span className="text-[10px] font-bold">Atualizar</span>
+        </button>
+      </div>
     </div>
   );
 };
