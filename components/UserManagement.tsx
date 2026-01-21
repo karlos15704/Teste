@@ -1,7 +1,7 @@
 import React, { useState, useMemo } from 'react';
 import { User } from '../types';
 import { generateId } from '../utils';
-import { Plus, Trash2, Edit2, Shield, User as UserIcon, Save, X, Key, Crown, ChefHat, Store } from 'lucide-react';
+import { Plus, Trash2, Edit2, Shield, User as UserIcon, Save, X, Key, Crown, ChefHat, Store, Lock } from 'lucide-react';
 
 interface UserManagementProps {
   users: User[];
@@ -72,6 +72,12 @@ const UserManagement: React.FC<UserManagementProps> = ({ users, onAddUser, onUpd
     }
     resetForm();
   };
+
+  // Lógica de Permissão de Edição de Nome:
+  // 1. Se estiver criando um NOVO usuário (!editingUser) -> Pode digitar.
+  // 2. Se for o PROFESSOR (currentUser.id === '0') -> Pode editar sempre.
+  // 3. Caso contrário (Gerente editando existente ou Staff editando o próprio) -> Não pode.
+  const canEditName = !editingUser || currentUser.id === '0';
 
   return (
     <div className="p-6 h-full overflow-y-auto bg-orange-50/50">
@@ -194,15 +200,26 @@ const UserManagement: React.FC<UserManagementProps> = ({ users, onAddUser, onUpd
             
             <form onSubmit={handleSubmit} className="p-6 space-y-4">
               <div>
-                <label className="block text-xs font-bold text-gray-500 uppercase mb-1">Nome do Funcionário</label>
+                <label className="flex items-center gap-2 text-xs font-bold text-gray-500 uppercase mb-1">
+                  Nome do Funcionário
+                  {!canEditName && <Lock size={12} className="text-orange-500" />}
+                </label>
                 <input 
                   type="text" 
                   value={name}
                   onChange={e => setName(e.target.value)}
-                  className="w-full border-2 border-gray-200 rounded-xl p-3 focus:outline-none focus:border-orange-500 font-bold text-gray-700"
+                  disabled={!canEditName}
+                  className={`w-full border-2 rounded-xl p-3 focus:outline-none font-bold text-gray-700 
+                    ${canEditName 
+                      ? 'border-gray-200 focus:border-orange-500 bg-white' 
+                      : 'border-gray-100 bg-gray-100 text-gray-400 cursor-not-allowed'
+                    }`}
                   placeholder="Ex: João Silva"
                   required
                 />
+                {!canEditName && (
+                  <p className="text-[10px] text-orange-500 mt-1">Apenas o Professor pode alterar nomes existentes.</p>
+                )}
               </div>
 
               <div>
