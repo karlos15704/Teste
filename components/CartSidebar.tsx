@@ -44,7 +44,7 @@ const CartSidebar: React.FC<CartSidebarProps> = ({ cart, onRemoveItem, onUpdateQ
   const missingCash = Math.max(0, total - cashReceived);
 
   // Configuração da Imagem do Pix (Link fornecido)
-  const PIX_QR_IMAGE = "https://upnow-prod.ff45e40d1a1c8f7e7de4e976d0c9e555.r2.cloudflarestorage.com/sZfVUJbAelbb6Rfo7X2xf7SHdG82/dd07c32a-8de9-48cc-a6d6-77072b86c9d3?X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Credential=2f488bd324502ec20fee5b40e9c9ed39%2F20260120%2Fauto%2Fs3%2Faws4_request&X-Amz-Date=20260120T211559Z&X-Amz-Expires=43200&X-Amz-Signature=219bcd365bdd21f471b94deb3cc43205f21178d9df47dfbdaa1a666489ffc516&X-Amz-SignedHeaders=host&response-content-disposition=attachment%3B%20filename%3D%22Captura%20de%20tela%202026-01-20%20181523.png%22";
+  const PIX_QR_IMAGE = "https://i.ibb.co/8LFWSQfx/Captura-de-tela-2026-01-20-181523.png";
 
   // Focus input when cash modal opens
   useEffect(() => {
