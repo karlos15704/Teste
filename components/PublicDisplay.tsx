@@ -200,23 +200,28 @@ const PublicDisplay: React.FC<PublicDisplayProps> = ({ transactions }) => {
             </div>
         )}
 
-        {/* HEADER */}
-        <header className="h-24 bg-gradient-to-b from-gray-900 to-black border-b border-gray-800 flex items-center justify-between px-8 z-10 relative shadow-xl flex-shrink-0">
+        {/* HEADER - CENTRALIZADO */}
+        <header className="h-28 bg-gradient-to-b from-gray-900 to-black border-b border-gray-800 flex items-center justify-center px-8 z-10 relative shadow-xl flex-shrink-0">
+            
+            {/* GRUPO CENTRAL (Logo + Título) */}
             <div className="flex items-center gap-6">
-            <div className="relative">
-                <div className="absolute inset-0 bg-orange-500 blur-xl opacity-20 animate-pulse"></div>
-                <img src={MASCOT_URL} alt="Logo" className="h-16 w-16 object-contain relative z-10" />
-            </div>
-            <div>
-                <h1 className="text-4xl font-black tracking-tighter text-white uppercase drop-shadow-md" style={{ textShadow: '2px 2px 0 #ea580c' }}>{APP_NAME}</h1>
-                <p className="text-gray-400 text-sm font-bold tracking-widest uppercase flex items-center gap-2">
-                    <ChefHat size={14} className="text-orange-500" />
-                    Feira Cultural • {SCHOOL_CLASS}
-                </p>
-            </div>
+                <div className="relative">
+                    <div className="absolute inset-0 bg-orange-500 blur-xl opacity-20 animate-pulse"></div>
+                    <img src={MASCOT_URL} alt="Logo" className="h-20 w-20 object-contain relative z-10" />
+                </div>
+                <div className="flex flex-col justify-center">
+                    <h1 className="text-5xl font-black tracking-tighter text-white uppercase drop-shadow-md leading-none" style={{ textShadow: '2px 2px 0 #ea580c' }}>
+                        {APP_NAME}
+                    </h1>
+                    <p className="text-gray-400 text-base font-bold tracking-[0.2em] uppercase flex items-center justify-center gap-2 mt-1">
+                        <ChefHat size={16} className="text-orange-500" />
+                        Feira Cultural • {SCHOOL_CLASS}
+                    </p>
+                </div>
             </div>
 
-            <div className="text-right">
+            {/* RELÓGIO (Posicionado Absolutamente à Direita) */}
+            <div className="absolute right-8 top-1/2 -translate-y-1/2 text-right hidden lg:block">
                 <div className="text-5xl font-mono font-black text-white leading-none tracking-wider tabular-nums">
                     {currentTime.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}
                 </div>
