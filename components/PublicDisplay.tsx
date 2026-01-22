@@ -179,7 +179,7 @@ const PublicDisplay: React.FC<PublicDisplayProps> = ({ transactions }) => {
 
             <div className="relative z-10 flex flex-col items-center text-center p-4 w-full">
                 <h1 className="text-[6vw] leading-none font-black text-white mb-8 drop-shadow-[0_10px_10px_rgba(0,0,0,0.8)] uppercase tracking-tighter animate-pulse">
-                    SAIU DO FORNO!
+                    TÁ FRITOOOOO!!!!
                 </h1>
 
                 {/* Box da Senha */}
